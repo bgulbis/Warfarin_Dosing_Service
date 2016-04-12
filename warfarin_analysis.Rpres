@@ -29,3 +29,15 @@ graph <- analyze.patients.all %>%
 print(graph)
 ```
 
+Utilization by Medical Service
+========================================================
+```{r graph_services, echo=FALSE}
+graph <- analyze.services.all %>%
+    ggplot(aes(x = service)) +
+    geom_bar(fill = "blue") +
+    ggtitle("Utilization of Warfarin by Medical Service, 2013-2015") +
+    xlab("Service") +
+    ylab("Number of Patients")
+
+print(graph)
+```
