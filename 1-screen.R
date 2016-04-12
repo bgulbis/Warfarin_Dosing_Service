@@ -7,7 +7,8 @@ raw.patients <- read_edw_data(dir.patients, "patients_events_warfarin", "patient
     filter(age >= 18,
            discharge.datetime < mdy("1/1/2016"))
 
-edw.pie <- concat_encounters(raw.patients$pie.id, 750)
+edw.pie.all <- concat_encounters(raw.patients$pie.id, 750)
+# print(edw.pie.all)
 
 # get total number of patients per year
 analyze.patients.all <- raw.patients %>%
