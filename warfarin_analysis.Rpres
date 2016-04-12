@@ -1,0 +1,31 @@
+Warfarin Pharmacy Dosing Service Analysis
+========================================================
+author: Brian Gulbis
+date: April 2016
+autosize: true
+
+Annual Warfarin Utilization
+========================================================
+```{r library, message=FALSE, echo=FALSE}
+library(BGTools)
+library(dplyr)
+library(ggplot2)
+source("0-dirs.R")
+```
+
+```{r data, echo=FALSE}
+tmp <- get_rds(dir.analysis)
+```
+
+```{r graph_utilization, echo=FALSE}
+graph <- analyze.patients.all %>%
+    filter(year.cal >= 2013) %>%
+    ggplot(aes(x = year.cal)) +
+    geom_bar(fill = "blue") +
+    ggtitle("Number of Patients Receiving Warfarin at MH-TMC, 2013-2015") +
+    xlab("Year") +
+    ylab("Number of Patients")
+
+print(graph)
+```
+
