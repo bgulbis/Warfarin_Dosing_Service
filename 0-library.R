@@ -6,6 +6,6 @@ library(stringr)
 library(lubridate)
 library(tidyr)
 
-patient.dir <- "patients"
+source("0-dirs.R")
 
-gzip_files(patient.dir)
+gzip_files(dir.patients)
