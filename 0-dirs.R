@@ -2,4 +2,4 @@
 
 dir.patients <- "patients"
 dir.analysis <- "analysis"
-
+dir.data <- "data"

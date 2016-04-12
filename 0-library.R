@@ -9,3 +9,4 @@ library(tidyr)
 source("0-dirs.R")
 
 gzip_files(dir.patients)
+gzip_files(dir.data)
