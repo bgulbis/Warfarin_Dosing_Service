@@ -18,12 +18,12 @@ raw.warfarin <- read_edw_data(dir.patients, "meds_sched_warfarin", "meds_sched")
     semi_join(raw.patients, by = "pie.id")
 
 # only include patients who received at least 3 doses
-pts.include <- raw.warfarin %>%
+pts.screen <- raw.warfarin %>%
     group_by(pie.id) %>%
     summarize(count = n()) %>%
     filter(count > 2)
 
-edw.pie <- concat_encounters(pts.include$pie.id, 750)
+edw.pie <- concat_encounters(pts.screen$pie.id, 750)
 
 # find first dose of warfarin
 tmp.warfarin.start.all <- raw.warfarin %>%
@@ -32,7 +32,7 @@ tmp.warfarin.start.all <- raw.warfarin %>%
     summarize(warf.start = first(med.datetime))
 
 tmp.warfarin.start <- tmp.warfarin.start.all %>%
-    semi_join(pts.include, by = "pie.id")
+    semi_join(pts.screen, by = "pie.id")
 
 # find out which service patients were on at time of warfarin initiation
 raw.services <- read_edw_data(dir.patients, "services_warfarin", "services") %>%
@@ -64,11 +64,11 @@ analyze.locations.all <- raw.locations %>%
            depart.datetime >= warf.start)
 
 raw.inr <- read_edw_data(dir.patients, "warfarin_coags", "labs") %>%
-    semi_join(pts.include, by = "pie.id") %>%
+    semi_join(pts.screen, by = "pie.id") %>%
     filter(lab == "inr")
 
 # only inlcude patients with a baseline INR < 1.5 (last prior to warfarin start)
-pts.include <- raw.inr %>%
+pts.screen <- raw.inr %>%
     inner_join(tmp.warfarin.start, by = "pie.id") %>%
     filter(lab.datetime <= warf.start) %>%
     group_by(pie.id) %>%
@@ -79,8 +79,9 @@ pts.include <- raw.inr %>%
               inr.time.prior = last(inr.time.prior)) %>%
     filter(inr.baseline < 1.5)
 
-edw.pie <- concat_encounters(pts.include$pie.id, 750)
+edw.pie <- concat_encounters(pts.screen$pie.id, 750)
 
 save_rds(dir.analysis, "analyze")
+save_rds(dir.tidy, "pts")
 
 print(edw.pie)
