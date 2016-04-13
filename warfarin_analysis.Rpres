@@ -33,11 +33,17 @@ Utilization by Medical Service
 ========================================================
 ```{r graph_services, echo=FALSE}
 graph <- analyze.services.all %>%
-    ggplot(aes(x = service)) +
-    geom_bar(fill = "blue") +
-    ggtitle("Utilization of Warfarin by Medical Service, 2013-2015") +
-    xlab("Service") +
-    ylab("Number of Patients")
+    mutate(service = factor(service, levels = names(sort(table(service), decreasing = TRUE)), ordered = TRUE)) %>%
+    group_by(service) %>%
+    summarize(count = n()) %>%
+    arrange(desc(count)) %>%
+    top_n(10, count) %>%
+    ggplot(aes(x = service, y = count)) +
+    geom_bar(stat = "identity", fill = "blue") +
+    ggtitle("Top 10 Medical Services Utilizing Warfarin, 2013-2015") +
+    xlab("Medical Service") +
+    ylab("Number of Patients") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 print(graph)
 ```
