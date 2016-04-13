@@ -47,3 +47,22 @@ graph <- analyze.services.all %>%
 
 print(graph)
 ```
+
+Utilization by Hospital Unit
+========================================================
+```{r graph_locations, echo=FALSE}
+graph <- analyze.locations.all %>%
+    mutate(location = factor(location, levels = names(sort(table(location), decreasing = TRUE)), ordered = TRUE)) %>%
+    group_by(location) %>%
+    summarize(count = n()) %>%
+    arrange(desc(count)) %>%
+    top_n(10, count) %>%
+    ggplot(aes(x = location, y = count)) +
+    geom_bar(stat = "identity", fill = "blue") +
+    ggtitle("Top 10 Hospital Units for Warfarin Initiation, 2013-2015") +
+    xlab("Hospital Unit") +
+    ylab("Number of Patients") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(graph)
+```
