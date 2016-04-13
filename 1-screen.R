@@ -54,6 +54,15 @@ analyze.services.all <- raw.services %>%
     filter(start.datetime <= warf.start,
            end.datetime >= warf.start)
 
+# find hospital unit where warfarin was started
+raw.locations <- read_edw_data(dir.patients, "locations") %>%
+    tidy_data("locations")
+
+analyze.locations.all <- raw.locations %>%
+    inner_join(tmp.warfarin.start.all, by = "pie.id") %>%
+    filter(arrive.datetime <= warf.start,
+           depart.datetime >= warf.start)
+
 raw.inr <- read_edw_data(dir.patients, "warfarin_coags", "labs") %>%
     semi_join(pts.include, by = "pie.id") %>%
     filter(lab == "inr")

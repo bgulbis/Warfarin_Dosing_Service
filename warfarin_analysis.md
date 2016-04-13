@@ -15,3 +15,7 @@ Annual Warfarin Utilization
 Utilization by Medical Service
 ========================================================
 ![plot of chunk graph_services](warfarin_analysis-figure/graph_services-1.png)
+
+Utilization by Hospital Unit
+========================================================
+![plot of chunk graph_locations](warfarin_analysis-figure/graph_locations-1.png)
