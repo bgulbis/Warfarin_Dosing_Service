@@ -63,4 +63,19 @@ excl$Elevated_LFTs <- nrow(excl.lfts)
 
 pts.include <- anti_join(pts.include, excl.lfts, by = "pie.id")
 
-raw.goals <- read_edw_data(dir.exclude, "goals", "warfarin")
+# exclude patients without an INR goal
+raw.goals <- read_edw_data(dir.exclude, "goals", "warfarin") %>%
+    semi_join(pts.include, by = "pie.id") %>%
+    filter(warfarin.event == "inr range")
+
+excl.goals <- anti_join(pts.include, raw.goals, by = "pie.id")
+
+excl$Missing_INR_Goals <- nrow(excl.goals)
+
+pts.include <- anti_join(pts.include, excl.goals, by = "pie.id")
+
+save_rds(dir.tidy, "excl$")
+save_rds(dir.tidy, "pts.include")
+
+edw.pie <- concat_encounters(pts.include$pie.id, 750)
+print(edw.pie)
