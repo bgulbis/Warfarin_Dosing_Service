@@ -25,13 +25,14 @@ pts.screen <- raw.warfarin %>%
 
 edw.pie <- concat_encounters(pts.screen$pie.id, 750)
 
-# find first dose of warfarin
-tmp.warfarin.start.all <- raw.warfarin %>%
+# find first and last doses of warfarin
+tmp.warfarin.dates.all <- raw.warfarin %>%
     group_by(pie.id) %>%
     arrange(med.datetime) %>%
-    summarize(warf.start = first(med.datetime))
+    summarize(warf.start = first(med.datetime),
+              warf.end = last(med.datetime))
 
-tmp.warfarin.start <- tmp.warfarin.start.all %>%
+data.warfarin.dates <- tmp.warfarin.dates.all %>%
     semi_join(pts.screen, by = "pie.id")
 
 # find out which service patients were on at time of warfarin initiation
@@ -50,7 +51,7 @@ tmp2 <- filter(raw.services, !(pie.id %in% c("113104277", "113105042", "11310523
 raw.services <- bind_rows(tmp, tmp2)
 
 analyze.services.all <- raw.services %>%
-    inner_join(tmp.warfarin.start.all, by = "pie.id") %>%
+    inner_join(tmp.warfarin.dates.all, by = "pie.id") %>%
     filter(start.datetime <= warf.start,
            end.datetime >= warf.start)
 
@@ -59,7 +60,7 @@ raw.locations <- read_edw_data(dir.patients, "locations") %>%
     tidy_data("locations")
 
 analyze.locations.all <- raw.locations %>%
-    inner_join(tmp.warfarin.start.all, by = "pie.id") %>%
+    inner_join(tmp.warfarin.dates.all, by = "pie.id") %>%
     filter(arrive.datetime <= warf.start,
            depart.datetime >= warf.start)
 
@@ -69,7 +70,7 @@ raw.inr <- read_edw_data(dir.patients, "warfarin_coags", "labs") %>%
 
 # only inlcude patients with a baseline INR < 1.5 (last prior to warfarin start)
 pts.screen <- raw.inr %>%
-    inner_join(tmp.warfarin.start, by = "pie.id") %>%
+    inner_join(data.warfarin.dates, by = "pie.id") %>%
     filter(lab.datetime <= warf.start) %>%
     group_by(pie.id) %>%
     arrange(lab.datetime) %>%
@@ -81,7 +82,10 @@ pts.screen <- raw.inr %>%
 
 edw.pie <- concat_encounters(pts.screen$pie.id, 750)
 
+data.warfarin.dates <- semi_join(data.warfarin.dates, pts.screen, by = "pie.id")
+
 save_rds(dir.analysis, "analyze")
 save_rds(dir.tidy, "pts")
+save_rds(dir.tidy, "^data")
 
 print(edw.pie)
