@@ -4,7 +4,7 @@ source("0-library.R")
 
 tmp <- get_rds(dir.tidy)
 
-excl <- list()
+pts.exclude <- list()
 pts.include <- pts.screen
 
 # exclude if concurent DTI or DOAC given
@@ -14,7 +14,7 @@ excl.dti <- read_edw_data(dir.exclude, "dti", "meds_continuous") %>%
            med.datetime <= warf.end) %>%
     distinct(pie.id)
 
-excl$Concurrent_DTIs <- nrow(excl.dti)
+pts.exclude$Concurrent_DTIs <- nrow(excl.dti)
 
 pts.include <- anti_join(pts.include, excl.dti, by = "pie.id")
 
@@ -25,7 +25,7 @@ excl.doac <- read_edw_data(dir.exclude, "doac", "meds_sched") %>%
            med.datetime <= warf.end) %>%
     distinct(pie.id)
 
-excl$Concurrent_DOAcs <- nrow(excl.doac)
+pts.exclude$Concurrent_DOAcs <- nrow(excl.doac)
 
 pts.include <- anti_join(pts.include, excl.doac, by = "pie.id")
 
@@ -59,7 +59,7 @@ tmp.lfts.ast.alt <- raw.lfts %>%
 excl.lfts <- bind_rows(tmp.lfts.tbili.alt, tmp.lfts.ast.alt) %>%
     distinct(pie.id)
 
-excl$Elevated_LFTs <- nrow(excl.lfts)
+pts.exclude$Elevated_LFTs <- nrow(excl.lfts)
 
 pts.include <- anti_join(pts.include, excl.lfts, by = "pie.id")
 
@@ -70,12 +70,11 @@ raw.goals <- read_edw_data(dir.exclude, "goals", "warfarin") %>%
 
 excl.goals <- anti_join(pts.include, raw.goals, by = "pie.id")
 
-excl$Missing_INR_Goals <- nrow(excl.goals)
+pts.exclude$Missing_INR_Goals <- nrow(excl.goals)
 
 pts.include <- anti_join(pts.include, excl.goals, by = "pie.id")
 
-save_rds(dir.tidy, "excl$")
-save_rds(dir.tidy, "pts.include")
+save_rds(dir.tidy, "pts")
 
 edw.pie <- concat_encounters(pts.include$pie.id, 750)
 print(edw.pie)
