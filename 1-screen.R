@@ -5,9 +5,9 @@ source("0-library.R")
 # get list of patients receiving warfarin
 raw.patients <- read_edw_data(dir.patients, "patients_events_warfarin", "patients") %>%
     filter(age >= 18,
-           discharge.datetime < mdy("1/1/2016"))
+           discharge.datetime < mdy_hm("1/1/2016 00:00"))
 
-edw.pie.all <- concat_encounters(raw.patients$pie.id, 750)
+edw.pie.all <- concat_encounters(raw.patients$pie.id, 900)
 # print(edw.pie.all)
 
 # get total number of patients per year
@@ -23,7 +23,7 @@ pts.screen <- raw.warfarin %>%
     summarize(count = n()) %>%
     filter(count > 2)
 
-edw.pie <- concat_encounters(pts.screen$pie.id, 750)
+edw.pie <- concat_encounters(pts.screen$pie.id, 900)
 
 # find first and last doses of warfarin
 tmp.warfarin.dates.all <- raw.warfarin %>%
@@ -80,7 +80,7 @@ pts.screen <- raw.inr %>%
               inr.time.prior = last(inr.time.prior)) %>%
     filter(inr.baseline < 1.5)
 
-edw.pie <- concat_encounters(pts.screen$pie.id, 750)
+edw.pie <- concat_encounters(pts.screen$pie.id, 900)
 
 data.warfarin.dates <- semi_join(data.warfarin.dates, pts.screen, by = "pie.id")
 
