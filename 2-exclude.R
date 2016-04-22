@@ -4,7 +4,7 @@ source("0-library.R")
 
 tmp <- get_rds(dir.tidy)
 
-pts.exclude <- list(Screen = nrow(pts.screen))
+pts.exclude <- list(Screen = pts.screen$pie.id)
 pts.include <- pts.screen
 
 # dti/doac ----
@@ -15,7 +15,7 @@ excl.dti <- read_edw_data(dir.data, "^dti", "meds_continuous") %>%
            med.datetime <= warf.end) %>%
     distinct(pie.id)
 
-pts.exclude$Concurrent_DTIs <- nrow(excl.dti)
+pts.exclude$Concurrent_DTIs <- excl.dti$pie.id
 
 pts.include <- anti_join(pts.include, excl.dti, by = "pie.id")
 
@@ -26,7 +26,7 @@ excl.doac <- read_edw_data(dir.data, "^doac", "meds_sched") %>%
            med.datetime <= warf.end) %>%
     distinct(pie.id)
 
-pts.exclude$Concurrent_DOAcs <- nrow(excl.doac)
+pts.exclude$Concurrent_DOAcs <- excl.doac$pie.id
 
 pts.include <- anti_join(pts.include, excl.doac, by = "pie.id")
 
@@ -61,7 +61,7 @@ tmp.lfts.ast.alt <- raw.lfts %>%
 excl.lfts <- bind_rows(tmp.lfts.tbili.alt, tmp.lfts.ast.alt) %>%
     distinct(pie.id)
 
-pts.exclude$Elevated_LFTs <- nrow(excl.lfts)
+pts.exclude$Elevated_LFTs <- excl.lfts$pie.id
 
 pts.include <- anti_join(pts.include, excl.lfts, by = "pie.id")
 
@@ -73,7 +73,7 @@ raw.goals <- read_edw_data(dir.data, "goals", "warfarin") %>%
 
 excl.goals <- anti_join(pts.include, raw.goals, by = "pie.id")
 
-pts.exclude$Missing_INR_Goals <- nrow(excl.goals)
+pts.exclude$Missing_INR_Goals <- excl.goals$pie.id
 
 pts.include <- anti_join(pts.include, excl.goals, by = "pie.id")
 
@@ -93,9 +93,51 @@ tmp.inrs <- read_edw_data(dir.data, "labs_coag", "labs") %>%
 excl.inr <- tmp.inrs %>%
     filter(inr.time < -2 | inr.baseline > 1.5)
 
-pts.exclude$Elevated_Baseline_INR <- nrow(excl.inr)
+pts.exclude$Elevated_Baseline_INR <- excl.inr$pie.id
 
 pts.include <- anti_join(pts.include, excl.inr, by = "pie.id")
+
+# readmits ----
+# make a list of all person id's, then get list of all encounters for those
+# patients; use the list to find readmit encounters in study and
+raw.demographics <- read_edw_data(dir.data, "demographics") %>%
+    inner_join(pts.include, by = "pie.id") %>%
+    distinct(pie.id)
+
+edw.persons <- concat_encounters(raw.demographics$person.id, 900)
+print(edw.persons)
+
+readmits <- c("Inpatient", "OBS Observation Patient", "EC Emergency Center",
+              "OBS Day Surgery", "Bedded Outpatient", "Inpatient Rehab",
+              "Inpatient Snf", "EC Fast ER Care", "72 Hour ER")
+
+raw.encounters <- read_edw_data(dir.data, "encounters") %>%
+    filter(visit.type %in% readmits)
+
+raw.visits <- read_edw_data(dir.data, "visits")
+
+tmp.encounters <- inner_join(raw.encounters, raw.visits, by = c("pie.id", "admit.datetime")) %>%
+    select(person.id, pie.id, admit.datetime, discharge.datetime) %>%
+    group_by(person.id) %>%
+    arrange(admit.datetime) %>%
+    summarize(pie.id = first(pie.id),
+              study.datetime = first(admit.datetime),
+              discharge.datetime = first(discharge.datetime))
+
+excl.readmits <- anti_join(pts.include, tmp.encounters, by = "pie.id")
+
+pts.exclude$Readmission_Encounters <- excl.readmits$pie.id
+
+pts.include <- semi_join(pts.include, tmp.encounters, by = "pie.id")
+
+tmp.encounters <- select(tmp.encounters, -pie.id)
+
+data.encounters.after <- left_join(raw.encounters, tmp.encounters, by = "person.id") %>%
+    filter(admit.datetime >= discharge.datetime) %>%
+    group_by(person.id) %>%
+    arrange(admit.datetime) %>%
+    mutate(encounter.next = difftime(admit.datetime, discharge.datetime, units = "days")) %>%
+    filter(encounter.next <= 180)
 
 # make groups ----
 raw.consults <- read_edw_data(dir.data, "consults", "orders") %>%
@@ -117,7 +159,7 @@ tmp.consults <- raw.consults %>%
 
 excl.mult.groups <- anti_join(pts.consults, tmp.consults, by = "pie.id")
 
-pts.exclude$Changed_Groups <- nrow(excl.mult.groups)
+pts.exclude$Changed_Groups <- excl.mult.groups$pie.id
 
 pts.consults <- semi_join(pts.consults, tmp.consults, by = "pie.id")
 
@@ -125,12 +167,13 @@ pts.include <- anti_join(pts.include, excl.mult.groups, by = "pie.id") %>%
     select(pie.id) %>%
     mutate(group = ifelse(pie.id %in% pts.consults$pie.id, "pharmacy", "traditional"))
 
-pts.exclude$Included <- nrow(pts.include)
-pts.exclude$Pharmacy <- nrow(pts.consults)
-pts.exclude$Traditional <- nrow(pts.control)
+pts.exclude$Included <- pts.include$pie.id
+pts.exclude$Pharmacy <- pts.consults$pie.id
+pts.exclude$Traditional <- pts.control$pie.id
 
 # save data ----
 save_rds(dir.tidy, "pts")
+save_rds(dir.tidy, "data")
 
-edw.pie <- concat_encounters(pts.include$pie.id, 750)
+edw.pie <- concat_encounters(pts.include$pie.id, 900)
 print(edw.pie)
