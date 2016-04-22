@@ -8,7 +8,7 @@ pts.exclude <- list()
 pts.include <- pts.screen
 
 # exclude if concurent DTI or DOAC given
-excl.dti <- read_edw_data(dir.exclude, "dti", "meds_continuous") %>%
+excl.dti <- read_edw_data(dir.data, "^dti", "meds_continuous") %>%
     inner_join(data.warfarin.dates, by = "pie.id") %>%
     filter(med.datetime >= warf.start,
            med.datetime <= warf.end) %>%
@@ -18,7 +18,7 @@ pts.exclude$Concurrent_DTIs <- nrow(excl.dti)
 
 pts.include <- anti_join(pts.include, excl.dti, by = "pie.id")
 
-excl.doac <- read_edw_data(dir.exclude, "doac", "meds_sched") %>%
+excl.doac <- read_edw_data(dir.data, "^doac", "meds_sched") %>%
     semi_join(pts.include, by = "pie.id") %>%
     inner_join(data.warfarin.dates, by = "pie.id") %>%
     filter(med.datetime >= warf.start,
@@ -30,7 +30,7 @@ pts.exclude$Concurrent_DOAcs <- nrow(excl.doac)
 pts.include <- anti_join(pts.include, excl.doac, by = "pie.id")
 
 # exclude if elevated LFTs: t.bili > 5.4; ast > 185 + alt > 430; alt > 860
-raw.lfts <- read_edw_data(dir.exclude, "labs_lfts", "labs") %>%
+raw.lfts <- read_edw_data(dir.data, "labs_lfts", "labs") %>%
     semi_join(pts.include, by = "pie.id") %>%
     inner_join(data.warfarin.dates, by = "pie.id") %>%
     filter(lab.datetime >= warf.start - days(2),
@@ -64,7 +64,7 @@ pts.exclude$Elevated_LFTs <- nrow(excl.lfts)
 pts.include <- anti_join(pts.include, excl.lfts, by = "pie.id")
 
 # exclude patients without an INR goal
-raw.goals <- read_edw_data(dir.exclude, "goals", "warfarin") %>%
+raw.goals <- read_edw_data(dir.data, "goals", "warfarin") %>%
     semi_join(pts.include, by = "pie.id") %>%
     filter(warfarin.event == "inr range")
 
