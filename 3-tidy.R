@@ -14,3 +14,12 @@ tmp.goals.inr <- make_inr_ranges(raw.goals) %>%
            !is.na(goal.high)) %>%
     group_by(pie.id) %>%
     arrange(warfarin.datetime)
+
+tmp.indication <- filter(raw.goals, warfarin.event == "warfarin indication") %>%
+    mutate(afib = str_detect(warfarin.result, "Atrial fibrillation"),
+           dvt = str_detect(warfarin.result, "Deep vein thrombosis"),
+           pe = str_detect(warfarin.result, "Pulmonary embolism"),
+           valve = str_detect(warfarin.result, "Heart valve \\(Mech/porc/bioprost\\)"),
+           other = str_detect(warfarin.result, "Other:"))
+
+tmp <- filter(tmp.indication, other == TRUE)
