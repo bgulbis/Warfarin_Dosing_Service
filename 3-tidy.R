@@ -15,11 +15,15 @@ tmp.goals.inr <- make_inr_ranges(raw.goals) %>%
     group_by(pie.id) %>%
     arrange(warfarin.datetime)
 
+pattern <- "Atrial fibrillation|Deep vein thrombosis|Pulmonary embolism|Heart valve \\(Mech/porc/bioprost\\)|Other:"
+library(purrr)
 tmp.indication <- filter(raw.goals, warfarin.event == "warfarin indication") %>%
     mutate(afib = str_detect(warfarin.result, "Atrial fibrillation"),
            dvt = str_detect(warfarin.result, "Deep vein thrombosis"),
            pe = str_detect(warfarin.result, "Pulmonary embolism"),
            valve = str_detect(warfarin.result, "Heart valve \\(Mech/porc/bioprost\\)"),
-           other = str_detect(warfarin.result, "Other:"))
+           other = str_detect(warfarin.result, "Other:")) %>%
+    dmap_at("warfarin.result", str_replace_all, pattern = pattern, replacement = "") %>%
+    dmap_at("warfarin.result", str_trim, side = "both")
 
 tmp <- filter(tmp.indication, other == TRUE)
