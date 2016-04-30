@@ -18,11 +18,15 @@ tmp.goals.inr <- make_inr_ranges(raw.goals) %>%
 pattern <- "Atrial fibrillation|Deep vein thrombosis|Pulmonary embolism|Heart valve \\(Mech/porc/bioprost\\)|Other:"
 library(purrr)
 tmp.indication <- filter(raw.goals, warfarin.event == "warfarin indication") %>%
-    mutate(afib = str_detect(warfarin.result, "Atrial fibrillation"),
-           dvt = str_detect(warfarin.result, "Deep vein thrombosis"),
-           pe = str_detect(warfarin.result, "Pulmonary embolism"),
-           valve = str_detect(warfarin.result, "Heart valve \\(Mech/porc/bioprost\\)"),
-           other = str_detect(warfarin.result, "Other:")) %>%
+    mutate(afib = str_detect(warfarin.result, regex("Atrial fibrillation|a[.*]?fib|a[.*]?flutter", ignore_case = TRUE)),
+           dvt = str_detect(warfarin.result, regex("Deep vein thrombosis|DVT", ignore_case = TRUE)),
+           pe = str_detect(warfarin.result, regex("Pulmonary embolism|PE", ignore_case = TRUE)),
+           valve = str_detect(warfarin.result, regex("Heart valve \\(Mech/porc/bioprost\\)|valve|avr|mvr", ignore_case = TRUE)),
+           stroke = str_detect(warfarin.result, regex("stroke|cva", ignore_case = TRUE)),
+           vad = str_detect(warfarin.result, regex("vad|hm[ ]?ii", ignore_case = TRUE)),
+           thrombus = str_detect(warfarin.result, regex("thromb|clot", ignore_case = TRUE)),
+           thrombus = ifelse(dvt == TRUE & thrombus == TRUE, FALSE, thrombus),
+           other = ifelse(afib == FALSE & dvt == FALSE & pe == FALSE & valve == FALSE & stroke == FALSE & vad == FALSE & thrombus == FALSE, TRUE, FALSE)) %>%
     dmap_at("warfarin.result", str_replace_all, pattern = pattern, replacement = "") %>%
     dmap_at("warfarin.result", str_trim, side = "both")
 
