@@ -4,15 +4,12 @@ source("0-library.R")
 
 tmp <- get_rds(dir.tidy)
 
-# inr ranges ----
+# warfarin indications ----
 
-raw.goals <- read_edw_data(dir.data, "goals", "warfarin") %>%
-    semi_join(pts.include, by = "pie.id")
-
-tmp.goals.inr <- make_inr_ranges(raw.goals) %>%
-    filter(!is.na(goal.low),
-           !is.na(goal.high)) %>%
+data.warfarin.indications <- read_edw_data(dir.data, "goals", "warfarin") %>%
+    semi_join(pts.include, by = "pie.id") %>%
+    make_indications %>%
     group_by(pie.id) %>%
-    arrange(warfarin.datetime)
-
-tmp.indications <- make_indications(raw.goals)
+    arrange(warfarin.datetime) %>%
+    summarize_each(funs(sum), -pie.id, -warfarin.datetime) %>%
+    mutate_each(funs(ifelse(. > 0, TRUE, FALSE)), -pie.id)

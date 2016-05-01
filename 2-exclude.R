@@ -67,11 +67,17 @@ pts.include <- anti_join(pts.include, excl.lfts, by = "pie.id")
 
 # inr goal ----
 # exclude patients without an INR goal
-raw.goals <- read_edw_data(dir.data, "goals", "warfarin") %>%
+data.warfarin.goals <- read_edw_data(dir.data, "goals", "warfarin") %>%
     semi_join(pts.include, by = "pie.id") %>%
-    filter(warfarin.event == "inr range")
+    make_inr_ranges %>%
+    filter(!is.na(goal.low),
+           !is.na(goal.high)) %>%
+    group_by(pie.id) %>%
+    arrange(warfarin.datetime) %>%
+    summarize(goal.low = last(goal.low),
+              goal.high = last(goal.high))
 
-excl.goals <- anti_join(pts.include, raw.goals, by = "pie.id")
+excl.goals <- anti_join(pts.include, data.warfarin.goals, by = "pie.id")
 
 pts.exclude$Missing_INR_Goals <- excl.goals$pie.id
 
