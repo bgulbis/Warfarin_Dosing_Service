@@ -16,28 +16,24 @@ data.warfarin.indications <- read_edw_data(dir.data, "goals", "warfarin") %>%
 
 # inr values -------------------------------------------
 
-tmp.labs.coags <- read_edw_data(dir.data, "labs_coag", "labs") %>%
+data.labs.inrs <- read_edw_data(dir.data, "labs_coag", "labs") %>%
     semi_join(pts.include, by = "pie.id") %>%
+    tidy_data("labs") %>%
     inner_join(data.warfarin.dates, by = "pie.id") %>%
+    rename(lab.start = warf.start) %>%
     inner_join(data.warfarin.goals, by = "pie.id") %>%
     filter(lab == "inr",
-           lab.datetime >= warf.start,
+           lab.datetime >= lab.start - days(2),
            lab.datetime <= warf.end + days(2)) %>%
     group_by(pie.id) %>%
-    arrange(lab.datetime) %>%
-    mutate(censored = str_detect(lab.result, ">|<"),
-           lab.result = as.numeric(lab.result),
-           duration = as.numeric(difftime(lab.datetime, lag(lab.datetime), units = "hours")),
-           duration = ifelse(is.na(duration), 0, duration),
-           run.time = as.numeric(difftime(lab.datetime, warf.start,
-                                          units = "hours")))
+    arrange(lab.datetime)
+
 
 threshold <- list(~lab.result >= goal.low, ~lab.result <= goal.high)
 
-tmp.inr.inrange <- group_by(tmp.labs.coags, pie.id, lab) %>%
-    # select(pie.id, lab, lab.result, goal.low, goal.high, run.time) %>%
+data.inr.inrange <- calc_lab_runtime(data.labs.inrs) %>%
+    group_by(pie.id, lab) %>%
     calc_perc_time(threshold, meds = FALSE)
-
 
 # hgb drop ---------------------------------------------
 
