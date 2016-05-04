@@ -31,7 +31,8 @@ data.labs.inrs <- read_edw_data(dir.data, "labs_coag", "labs") %>%
 
 threshold <- list(~lab.result >= goal.low, ~lab.result <= goal.high)
 
-data.inr.inrange <- calc_lab_runtime(data.labs.inrs) %>%
+data.inr.inrange <- filter(data.labs.inrs, lab.datetime >= lab.start) %>%
+    calc_lab_runtime %>%
     group_by(pie.id, lab) %>%
     calc_perc_time(threshold, meds = FALSE)
 
