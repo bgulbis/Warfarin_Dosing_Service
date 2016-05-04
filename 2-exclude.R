@@ -49,7 +49,8 @@ tmp.lfts.tbili.alt <- raw.lfts %>%
 tmp.lfts.ast.alt <- raw.lfts %>%
     filter((lab == "ast" & (lab.result > 185 | result.high == TRUE)) |
            (lab == "alt" & (lab.result > 430 | result.high == TRUE))) %>%
-    mutate(lab.result = ifelse(is.na(lab.result) & result.high == TRUE, 1000, lab.result)) %>%
+    mutate(lab.result = ifelse(is.na(lab.result) & result.high == TRUE,
+                               1000, lab.result)) %>%
     distinct(pie.id, lab.datetime, lab) %>%
     group_by(pie.id, lab.datetime) %>%
     select(pie.id:lab.result) %>%
@@ -122,7 +123,8 @@ raw.encounters <- read_edw_data(dir.data, "encounters") %>%
 
 raw.visits <- read_edw_data(dir.data, "visits")
 
-tmp.encounters <- inner_join(raw.encounters, raw.visits, by = c("pie.id", "admit.datetime")) %>%
+tmp.encounters <- inner_join(raw.encounters, raw.visits,
+                             by = c("pie.id", "admit.datetime")) %>%
     select(person.id, pie.id, admit.datetime, discharge.datetime) %>%
     group_by(person.id) %>%
     arrange(admit.datetime) %>%
@@ -138,11 +140,13 @@ pts.include <- semi_join(pts.include, tmp.encounters, by = "pie.id")
 
 tmp.encounters <- select(tmp.encounters, -pie.id)
 
-data.encounters.after <- left_join(raw.encounters, tmp.encounters, by = "person.id") %>%
+data.encounters.after <- left_join(raw.encounters, tmp.encounters,
+                                   by = "person.id") %>%
     filter(admit.datetime >= discharge.datetime) %>%
     group_by(person.id) %>%
     arrange(admit.datetime) %>%
-    mutate(encounter.next = difftime(admit.datetime, discharge.datetime, units = "days")) %>%
+    mutate(encounter.next = difftime(admit.datetime, discharge.datetime,
+                                     units = "days")) %>%
     filter(encounter.next <= 180)
 
 # make groups ----
@@ -155,12 +159,14 @@ pts.control <- anti_join(pts.include, raw.consults, by = "pie.id")
 # find when consult started in relation to warfarin start
 # remove patients who were consulted > 2 days after warfarin was started
 tmp.consults <- raw.consults %>%
-    filter(!str_detect(order, regex("(hold|discontinue)", ignore_case = TRUE))) %>%
+    filter(!str_detect(order, regex("(hold|discontinue)",
+                                    ignore_case = TRUE))) %>%
     group_by(pie.id) %>%
     arrange(order.datetime) %>%
     summarize(consult.start = first(order.datetime)) %>%
     inner_join(data.warfarin.dates, by = "pie.id") %>%
-    mutate(start.days = as.numeric(difftime(consult.start, warf.start, units = "days"))) %>%
+    mutate(start.days = as.numeric(difftime(consult.start, warf.start,
+                                            units = "days"))) %>%
     filter(start.days <= 2)
 
 excl.mult.groups <- anti_join(pts.consults, tmp.consults, by = "pie.id")
@@ -171,11 +177,21 @@ pts.consults <- semi_join(pts.consults, tmp.consults, by = "pie.id")
 
 pts.include <- anti_join(pts.include, excl.mult.groups, by = "pie.id") %>%
     select(pie.id) %>%
-    mutate(group = ifelse(pie.id %in% pts.consults$pie.id, "pharmacy", "traditional"))
+    mutate(group = ifelse(pie.id %in% pts.consults$pie.id, "pharmacy",
+                          "traditional"))
+
+data.identifiers <- read_edw_data(dir.data, "identifiers", "id") %>%
+    semi_join(pts.include, by = "pie.id")
+
+data.encounters.after <- semi_join(data.encounters.after, data.identifiers,
+                                   by = "person.id")
 
 pts.exclude$Included <- pts.include$pie.id
 pts.exclude$Pharmacy <- pts.consults$pie.id
 pts.exclude$Traditional <- pts.control$pie.id
+
+data.warfarin.dates <- semi_join(data.warfarin.dates, pts.include, by = "pie.id")
+data.warfarin.goals <- semi_join(data.warfarin.goals, pts.include, by = "pie.id")
 
 # save data ----
 save_rds(dir.tidy, "pts")
