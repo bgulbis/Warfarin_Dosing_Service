@@ -36,10 +36,23 @@ tmp <- get_rds("tidy")
 
 ## Warfarin Dosing Service
 
-#### Groups
+### Groups
 
 * Pharmacy Dosing Service (n = `r length(pts.exclude$Pharmacy)`)
 * Traditional Dosing (n = `r length(pts.exclude$Traditional)`)
+
+### Indications
+
+```{r indications, fig.cap="Indications for warfarin use"}
+graph <- inner_join(pts.include, data.warfarin.indications, by = "pie.id") %>%
+    gather(indication, value, -pie.id, -group) %>%
+    filter(value == TRUE) %>%
+    ggplot(aes(x = indication, fill = group)) +
+    geom_bar(position = "dodge") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(graph)
+```
 
 ## Exploratory Plots
 
@@ -61,7 +74,7 @@ print(graph)
 ```
 
 ### Change in Hgb
-```{r hgb, fig.cap="Change in INR after starting warfarin"}
+```{r hgb, fig.cap="Change in hemoglobin after starting warfarin"}
 graph <- inner_join(pts.include, data.labs.hgb, by = "pie.id") %>%
     calc_lab_runtime(units = "days") %>%
     ggplot(aes(x = run.time, y = lab.result)) +
