@@ -19,15 +19,7 @@ output:
 library(BGTools)
 library(dplyr)
 library(tidyr)
-library(lubridate)
 library(ggplot2)
-library(grid)
-library(gridExtra)
-library(RColorBrewer)
-library(pander)
-# library(captioner)
-panderOptions("table.split.table", Inf)
-# fig_nums <- captioner()
 ```
 
 ```{r data, echo=FALSE}
@@ -71,6 +63,15 @@ graph <- inner_join(pts.include, data.labs.inrs, by = "pie.id") %>%
     coord_cartesian(xlim = c(-2, 10), ylim = c(1, 4)) 
 
 print(graph)
+```
+
+### INR in therapuetic range
+```{r inrange, fig.cap="Percent of time INR is within therapeutic range"}
+pts.include %>%
+    inner_join(data.inr.inrange, by = "pie.id") %>%
+    ggplot(aes(x = group, y = perc.time)) +
+    geom_boxplot() +
+    ylab("Time in Therapeutic Range (%)")
 ```
 
 ### Change in Hgb
