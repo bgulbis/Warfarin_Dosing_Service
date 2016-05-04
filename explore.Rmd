@@ -1,0 +1,95 @@
+---
+title: "Warfarin Dosing Service Analysis"
+subtitle: "Exploratory Analysis"
+author: "Brian Gulbis"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document: 
+    code_folding: hide
+    fig_caption: yes
+    toc: yes
+    toc_float: yes
+---
+
+```{r global_options, echo=FALSE}
+# knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+```{r library, message=FALSE}
+library(BGTools)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+```{r data, echo=FALSE}
+tmp <- get_rds("tidy")
+```
+
+## Warfarin Dosing Service
+
+### Groups
+
+* Pharmacy Dosing Service (n = `r length(pts.exclude$Pharmacy)`)
+* Traditional Dosing (n = `r length(pts.exclude$Traditional)`)
+
+### Indications
+
+```{r indications, fig.cap="Indications for warfarin use"}
+graph <- inner_join(pts.include, data.warfarin.indications, by = "pie.id") %>%
+    gather(indication, value, -pie.id, -group) %>%
+    filter(value == TRUE) %>%
+    ggplot(aes(x = indication, fill = group)) +
+    geom_bar(position = "dodge") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(graph)
+```
+
+## Exploratory Plots
+
+### Change in INR
+```{r inr, fig.cap="Change in INR after starting warfarin"}
+graph <- inner_join(pts.include, data.labs.inrs, by = "pie.id") %>%
+    calc_lab_runtime(units = "days") %>%
+    ggplot(aes(x = run.time, y = lab.result)) +
+    facet_grid(. ~ group) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_point(alpha = 0.3) +
+    geom_smooth(color = "blue") + 
+    xlab("Day") +
+    ylab("INR") +
+    scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
+    coord_cartesian(xlim = c(-2, 10), ylim = c(1, 4)) 
+
+print(graph)
+```
+
+### INR in therapuetic range
+```{r inrange, fig.cap="Percent of time INR is within therapeutic range"}
+pts.include %>%
+    inner_join(data.inr.inrange, by = "pie.id") %>%
+    ggplot(aes(x = group, y = perc.time)) +
+    geom_boxplot() +
+    ylab("Time in Therapeutic Range (%)")
+```
+
+### Change in Hgb
+```{r hgb, fig.cap="Change in hemoglobin after starting warfarin"}
+graph <- inner_join(pts.include, data.labs.hgb, by = "pie.id") %>%
+    calc_lab_runtime(units = "days") %>%
+    ggplot(aes(x = run.time, y = lab.result)) +
+    facet_grid(. ~ group) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_point(alpha = 0.3) +
+    geom_smooth(color = "blue") + 
+    xlab("Day") +
+    ylab("Hgb (g/dL)") +
+    scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
+    coord_cartesian(xlim = c(-2, 10), ylim = c(5, 15)) 
+
+print(graph)
+```
+
+
+

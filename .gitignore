@@ -4,3 +4,6 @@
 .Ruserdata
 patients
 analysis
+exclude
+tidy
+data

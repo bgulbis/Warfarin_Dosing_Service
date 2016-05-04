@@ -24,7 +24,8 @@ graph <- analyze.patients.all %>%
     geom_bar(fill = "blue") +
     ggtitle("Number of Patients Receiving Warfarin at MH-TMC, 2013-2015") +
     xlab("Year") +
-    ylab("Number of Patients")
+    ylab("Number of Patients") +
+    scale_y_continuous(limits = c(0, 3000))
 
 print(graph)
 ```
@@ -66,3 +67,29 @@ graph <- analyze.locations.all %>%
 
 print(graph)
 ```
+
+Comparison
+========================================================
+
+* Group 1 - Pharmacy Dosing Service
+    - Consult placed within 48 hours of warfarin initiation
+    - &ge; 60% of warfarin doses placed by pharmacist
+* Group 2 - Traditional Dosing
+
+Methods: Inclusion
+========================================================
+
+* January 1, 2015 to December 31, 2015
+* Age &ge; 18 years
+* Received at least 3 doses of warfarin
+* Baseline INR < 1.5
+
+Methods: Exclusion
+========================================================
+
+* Concurrent DTI or TSOAC
+* Liver dysfunction
+    - AST and ALT > 5x ULN (concurrently)
+    - ALT > 10x ULN
+    - T.Bili > 3x ULN
+* Missing goals of therapy data
