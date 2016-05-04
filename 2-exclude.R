@@ -93,12 +93,21 @@ tmp.inrs <- read_edw_data(dir.data, "labs_coag", "labs") %>%
     arrange(lab.datetime) %>%
     inner_join(data.warfarin.dates, by = "pie.id") %>%
     filter(lab.datetime < warf.start) %>%
-    mutate(inr.time = as.numeric(difftime(lab.datetime, warf.start, units = "days"))) %>%
-    summarize(inr.baseline = last(lab.result),
-              inr.time = last(inr.time))
+    mutate(inr.time = as.numeric(difftime(lab.datetime, warf.start,
+                                          units = "days")),
+           lab.result = as.numeric(lab.result))
 
 excl.inr <- tmp.inrs %>%
-    filter(inr.time < -2 | inr.baseline > 1.5)
+    filter(inr.time >= -2, lab.result > 1.5) %>%
+    distinct(pie.id)
+
+tmp <- tmp.inrs %>%
+    group_by(pie.id) %>%
+    summarize(inr.time = last(inr.time)) %>%
+    filter(inr.time < -2) %>%
+    distinct(pie.id)
+
+excl.inr <- bind_rows(excl.inr["pie.id"], tmp["pie.id"])
 
 pts.exclude$Elevated_Baseline_INR <- excl.inr$pie.id
 
