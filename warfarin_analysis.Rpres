@@ -24,7 +24,8 @@ graph <- analyze.patients.all %>%
     geom_bar(fill = "blue") +
     ggtitle("Number of Patients Receiving Warfarin at MH-TMC, 2013-2015") +
     xlab("Year") +
-    ylab("Number of Patients")
+    ylab("Number of Patients") +
+    scale_y_continuous(limits = c(0, 3000))
 
 print(graph)
 ```
