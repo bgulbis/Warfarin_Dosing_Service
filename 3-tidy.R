@@ -48,3 +48,9 @@ tmp.hgb.drop <- read_edw_data(dir.data, "labs_cbc", "labs") %>%
 data.hgb.drop <- group_by(tmp.hgb.drop, pie.id) %>%
     summarize(lab.datetime = first(lab.datetime),
               change = first(change))
+
+# save data --------------------------------------------
+
+save_rds(dir.tidy, "data")
+
+
