@@ -4,6 +4,11 @@ source("0-library.R")
 
 tmp <- get_rds(dir.tidy)
 
+# demographics -----------------------------------------
+
+data.demographics <- read_edw_data(dir.data, "demographics") %>%
+    semi_join(pts.include, by = "pie.id")
+
 # warfarin indications ---------------------------------
 
 data.warfarin.indications <- read_edw_data(dir.data, "goals", "warfarin") %>%
