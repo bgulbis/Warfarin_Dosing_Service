@@ -38,12 +38,18 @@ data.inr.inrange <- filter(data.labs.inrs, lab.datetime >= lab.start) %>%
 
 # hgb drop ---------------------------------------------
 
-tmp.hgb.drop <- read_edw_data(dir.data, "labs_cbc", "labs") %>%
+data.labs.hgb <- read_edw_data(dir.data, "labs_cbc", "labs") %>%
     semi_join(pts.include, by = "pie.id") %>%
+    tidy_data("labs") %>%
     inner_join(data.warfarin.dates, by = "pie.id") %>%
+    rename(lab.start = warf.start) %>%
     filter(lab == "hgb",
-           lab.datetime >= warf.start,
+           lab.datetime >= lab.start - days(2),
            lab.datetime <= warf.end + days(2)) %>%
+    group_by(pie.id) %>%
+    arrange(lab.datetime)
+
+tmp.hgb.drop <- filter(data.labs.hgb, lab.datetime >= lab.start) %>%
     lab_change(-2, max)
 
 data.hgb.drop <- group_by(tmp.hgb.drop, pie.id) %>%
