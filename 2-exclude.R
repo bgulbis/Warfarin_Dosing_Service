@@ -202,6 +202,14 @@ pts.exclude$Traditional <- pts.control$pie.id
 data.warfarin.dates <- semi_join(data.warfarin.dates, pts.include, by = "pie.id")
 data.warfarin.goals <- semi_join(data.warfarin.goals, pts.include, by = "pie.id")
 
+# current patients -------------------------------------
+
+pts.2015 <- inner_join(pts.include, data.warfarin.dates, by = "pie.id") %>%
+    filter(year(warf.start) == 2015)
+
+pts.include <- mutate(pts.include, year = ifelse(pie.id %in% pts.2015$pie.id,
+                                                 "current", "historical"))
+
 # save data --------------------------------------------
 save_rds(dir.tidy, "pts")
 save_rds(dir.tidy, "data")
