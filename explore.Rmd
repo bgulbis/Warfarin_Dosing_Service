@@ -27,20 +27,28 @@ library(scales)
 tmp <- get_rds("tidy")
 ```
 
+
 ## Warfarin Dosing Service
 
 ### Groups
 
-* Pharmacy Dosing Service (n = `r length(pts.exclude$Pharmacy)`)
-* Traditional Dosing (n = `r length(pts.exclude$Traditional)`)
+* Current: warfarin started between January 1, 2015 and December 31, 2015
+* Historical: warfarin started between July 1, 2012 and December 31, 2014
 
-### Indications
-
-```{r indications, fig.cap="Indications for warfarin use"}
+```{r groups}
 total <- pts.include %>%
     group_by(group, year) %>%
     summarize(total = n())
 
+groups <- total %>%
+    spread(year, total)
+
+knitr::kable(groups, caption = "Number of patients per group")
+```
+
+### Indications
+
+```{r indications, fig.cap="Indications for warfarin use"}
 counts <- pts.include %>%
     inner_join(data.warfarin.indications, by = "pie.id") %>%
     gather(indication, value, -pie.id, -group, -year) %>%
@@ -48,22 +56,31 @@ counts <- pts.include %>%
     group_by(group, year, indication) %>%
     summarize(n = n()) %>%
     left_join(total, by = c("group", "year")) %>%
-    # mutate(perc = n / total) %>%
-    ggplot(aes(x = indication, fill = group)) +
-    geom_bar(aes(y = n / total), position = "dodge") + 
+    mutate(perc = n / total) 
+
+ggplot(data = counts, aes(x = indication, fill = group)) +
+    geom_bar(aes(y = perc), stat = "identity", position = "dodge") + 
     facet_grid(year ~ .) +
-    # scale_y_continuous(labels = percent) +
+    ylab("Patients (%)") +
+    scale_y_continuous(labels = percent) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ### Dispositions
 
 ```{r disposition, fig.cap="Disposition on discharge"}
-pts.include %>% 
+counts <- pts.include %>% 
     inner_join(data.demographics, by = "pie.id") %>%
-    ggplot(aes(x = disposition, fill = group)) +
-    geom_bar(position = "dodge") + 
+    group_by(group, year, disposition) %>%
+    summarize(n = n()) %>%
+    left_join(total, by = c("group", "year")) %>%
+    mutate(perc = n / total) 
+    
+ggplot(data = counts, aes(x = disposition, fill = group)) +
+    geom_bar(aes(y = perc), stat = "identity", position = "dodge") + 
     facet_grid(year ~ .) +
+    ylab("Patients (%)") +
+    scale_y_continuous(labels = percent) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
