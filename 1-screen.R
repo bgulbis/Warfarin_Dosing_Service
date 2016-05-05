@@ -33,7 +33,8 @@ tmp.warfarin.dates.all <- raw.warfarin %>%
               warf.end = last(med.datetime))
 
 data.warfarin.dates <- tmp.warfarin.dates.all %>%
-    semi_join(pts.screen, by = "pie.id")
+    semi_join(pts.screen, by = "pie.id") %>%
+    mutate(warf.days = as.numeric(difftime(warf.end, warf.start, units = "days")))
 
 # find out which service patients were on at time of warfarin initiation
 raw.services <- read_edw_data(dir.patients, "services_warfarin", "services") %>%
