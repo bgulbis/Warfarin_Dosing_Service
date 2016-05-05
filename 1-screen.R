@@ -17,6 +17,16 @@ analyze.patients.all <- raw.patients %>%
 raw.warfarin <- read_edw_data(dir.patients, "meds_sched_warfarin", "meds_sched") %>%
     semi_join(raw.patients, by = "pie.id")
 
+data.warfarin.doses <- raw.warfarin %>%
+    mutate(dose.date = floor_date(med.datetime, unit = "day")) %>%
+    group_by(pie.id, dose.date) %>%
+    summarize(med.dose = sum(med.dose),
+              num.dose = n()) %>%
+    group_by(pie.id) %>%
+    mutate(duration = as.numeric(difftime(dose.date, lag(dose.date), units = "days")),
+           new.dose = ifelse(is.na(duration) | duration > 3, TRUE, FALSE),
+           dose.count = cumsum(new.dose))
+
 # only include patients who received at least 3 doses
 pts.screen <- raw.warfarin %>%
     group_by(pie.id) %>%
