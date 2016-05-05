@@ -20,6 +20,7 @@ library(BGTools)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(scales)
 ```
 
 ```{r data, echo=FALSE}
@@ -36,33 +37,53 @@ tmp <- get_rds("tidy")
 ### Indications
 
 ```{r indications, fig.cap="Indications for warfarin use"}
-graph <- inner_join(pts.include, data.warfarin.indications, by = "pie.id") %>%
-    gather(indication, value, -pie.id, -group) %>%
-    filter(value == TRUE) %>%
-    ggplot(aes(x = indication, fill = group)) +
-    geom_bar(position = "dodge") + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+total <- pts.include %>%
+    group_by(group, year) %>%
+    summarize(total = n())
 
-print(graph)
+counts <- pts.include %>%
+    inner_join(data.warfarin.indications, by = "pie.id") %>%
+    gather(indication, value, -pie.id, -group, -year) %>%
+    filter(value == TRUE) %>%
+    group_by(group, year, indication) %>%
+    summarize(n = n()) %>%
+    left_join(total, by = c("group", "year")) %>%
+    # mutate(perc = n / total) %>%
+    ggplot(aes(x = indication, fill = group)) +
+    geom_bar(aes(y = n / total), position = "dodge") + 
+    facet_grid(year ~ .) +
+    # scale_y_continuous(labels = percent) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+### Dispositions
+
+```{r disposition, fig.cap="Disposition on discharge"}
+pts.include %>% 
+    inner_join(data.demographics, by = "pie.id") %>%
+    ggplot(aes(x = disposition, fill = group)) +
+    geom_bar(position = "dodge") + 
+    facet_grid(year ~ .) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
 
 ## Exploratory Plots
 
 ### Change in INR
 ```{r inr, fig.cap="Change in INR after starting warfarin"}
-graph <- inner_join(pts.include, data.labs.inrs, by = "pie.id") %>%
+pts.include %>%
+    inner_join(data.labs.inrs, by = "pie.id") %>%
     calc_lab_runtime(units = "days") %>%
     ggplot(aes(x = run.time, y = lab.result)) +
-    facet_grid(. ~ group) +
-    geom_vline(xintercept = 0, linetype = "dashed") +
+    facet_grid(year ~ group) +
     geom_point(alpha = 0.3) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "green") +
     geom_smooth(color = "blue") + 
     xlab("Day") +
     ylab("INR") +
     scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
     coord_cartesian(xlim = c(-2, 10), ylim = c(1, 4)) 
-
-print(graph)
 ```
 
 ### INR in therapuetic range
@@ -71,24 +92,24 @@ pts.include %>%
     inner_join(data.inr.inrange, by = "pie.id") %>%
     ggplot(aes(x = group, y = perc.time)) +
     geom_boxplot() +
+    facet_grid(year ~ .) +
     ylab("Time in Therapeutic Range (%)")
 ```
 
 ### Change in Hgb
 ```{r hgb, fig.cap="Change in hemoglobin after starting warfarin"}
-graph <- inner_join(pts.include, data.labs.hgb, by = "pie.id") %>%
+pts.include %>%
+    inner_join(data.labs.hgb, by = "pie.id") %>%
     calc_lab_runtime(units = "days") %>%
     ggplot(aes(x = run.time, y = lab.result)) +
-    facet_grid(. ~ group) +
-    geom_vline(xintercept = 0, linetype = "dashed") +
+    facet_grid(year ~ group) +
     geom_point(alpha = 0.3) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "green") +
     geom_smooth(color = "blue") + 
     xlab("Day") +
     ylab("Hgb (g/dL)") +
     scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
     coord_cartesian(xlim = c(-2, 10), ylim = c(5, 15)) 
-
-print(graph)
 ```
 
 

@@ -7,7 +7,8 @@ tmp <- get_rds(dir.tidy)
 # demographics -----------------------------------------
 
 data.demographics <- read_edw_data(dir.data, "demographics") %>%
-    semi_join(pts.include, by = "pie.id")
+    semi_join(pts.include, by = "pie.id") %>%
+    distinct(pie.id)
 
 data.visits <- read_edw_data(dir.data, "visits") %>%
     semi_join(pts.include, by = "pie.id")
