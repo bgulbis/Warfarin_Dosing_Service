@@ -45,6 +45,16 @@ data.inr.inrange <- filter(data.labs.inrs, lab.datetime >= lab.start) %>%
     group_by(pie.id, lab) %>%
     calc_perc_time(threshold, meds = FALSE)
 
+# warfarin doses ---------------------------------------
+
+data.meds <- read_edw_data(dir.data, "meds_sched") %>%
+    semi_join(pts.include, by = "pie.id")
+
+tmp.warf <- filter(data.meds, med == "warfarin") %>%
+    mutate(dose.date = floor_date(med.datetime, unit = "day")) %>%
+    group_by(pie.id, dose.date) %>%
+    summarize(med.dose = sum(med.dose))
+
 # hgb drop ---------------------------------------------
 
 data.labs.hgb <- read_edw_data(dir.data, "labs_cbc", "labs") %>%
