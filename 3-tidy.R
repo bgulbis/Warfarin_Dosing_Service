@@ -9,6 +9,9 @@ tmp <- get_rds(dir.tidy)
 data.demographics <- read_edw_data(dir.data, "demographics") %>%
     semi_join(pts.include, by = "pie.id")
 
+data.visits <- read_edw_data(dir.data, "visits") %>%
+    semi_join(pts.include, by = "pie.id")
+
 # warfarin indications ---------------------------------
 
 data.warfarin.indications <- read_edw_data(dir.data, "goals", "warfarin") %>%
