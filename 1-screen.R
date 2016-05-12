@@ -17,15 +17,44 @@ analyze.patients.all <- raw.patients %>%
 raw.warfarin <- read_edw_data(dir.patients, "meds_sched_warfarin", "meds_sched") %>%
     semi_join(raw.patients, by = "pie.id")
 
-data.warfarin.doses <- raw.warfarin %>%
+# identify unique warfarin courses; criteria are first dose in hospital, more
+# than 5 days since prior warfarin dose, or 2-4 since last warfarin dose and the
+# INR is < 1.5 during this time
+tmp.warfarin.doses <- raw.warfarin %>%
     mutate(dose.date = floor_date(med.datetime, unit = "day")) %>%
     group_by(pie.id, dose.date) %>%
     summarize(med.dose = sum(med.dose),
               num.dose = n()) %>%
     group_by(pie.id) %>%
-    mutate(duration = as.numeric(difftime(dose.date, lag(dose.date), units = "days")),
-           new.dose = ifelse(is.na(duration) | duration > 3, TRUE, FALSE),
-           dose.count = cumsum(new.dose))
+    mutate(days.prev = as.numeric(difftime(dose.date, lag(dose.date), units = "days")))
+
+tmp.dates <- tmp.warfarin.doses %>%
+    group_by(pie.id) %>%
+    summarize(first.date = first(dose.date),
+              last.date = last(dose.date))
+
+tmp.inr <- read_edw_data(dir.patients, "inr", "labs") %>%
+    mutate(inr.date = floor_date(lab.datetime, unit = "day"),
+           lab.result = as.numeric(lab.result)) %>%
+    inner_join(tmp.dates, by = "pie.id") %>%
+    filter(inr.date >= first.date,
+           inr.date <= last.date) %>%
+    group_by(pie.id, inr.date) %>%
+    summarize(inr = max(lab.result))
+
+# convert NA's to 0 before using cumsum function
+cumsum_na <- function(x) {
+    x[is.na(x)] <- 0
+    cumsum(x)
+}
+
+data.warfarin.courses <- tmp.warfarin.doses %>%
+    full_join(tmp.inr, by = c("pie.id", "dose.date" = "inr.date")) %>%
+    arrange(pie.id, dose.date) %>%
+    mutate(new.dose = ifelse((!is.na(med.dose) & is.na(days.prev)) | days.prev > 5 |
+                                 (days.prev > 2 & lag(inr) < 1.5), TRUE, FALSE),
+           course = cumsum_na(new.dose))
+
 
 # only include patients who received at least 3 doses
 pts.screen <- raw.warfarin %>%
