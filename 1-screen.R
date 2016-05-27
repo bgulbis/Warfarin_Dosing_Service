@@ -120,7 +120,8 @@ raw.services <- bind_rows(tmp, tmp2)
 analyze.services.all <- raw.services %>%
     inner_join(tmp.warfarin.dates.all, by = "pie.id") %>%
     filter(start.datetime <= warf.start,
-           end.datetime >= warf.start)
+           end.datetime >= warf.start) %>%
+    mutate(consult = ifelse(pie.id %in% tmp.consults$pie.id, TRUE, FALSE))
 
 # find hospital unit where warfarin was started
 raw.locations <- read_edw_data(dir.patients, "locations") %>%
