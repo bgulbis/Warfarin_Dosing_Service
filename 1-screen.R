@@ -1,6 +1,7 @@
 # screen.R
 
 source("0-library.R")
+# library(edwr)
 
 # get list of patients receiving warfarin
 raw.patients <- read_edw_data(dir.patients, "patients") %>%
@@ -16,6 +17,31 @@ analyze.patients.all <- raw.patients %>%
 
 raw.warfarin <- read_edw_data(dir.patients, "meds_sched") %>%
     semi_join(raw.patients, by = "pie.id")
+
+raw.orders <- edwr::read_edw_data(dir.patients, "orders") %>%
+    filter(action.type == "Order") %>%
+    mutate(action.date = floor_date(action.datetime, unit = "day"),
+           consult = !str_detect(order, "^warfarin$"))
+
+analyze.utilization <- raw.orders %>%
+    group_by(pie.id, action.date, consult) %>%
+    summarize(n = n()) %>%
+    group_by(action.date, consult) %>%
+    summarize(n = n())
+
+tmp.consults <- read_edw_data(dir.data, "consults", "orders") %>%
+    semi_join(raw.patients, by = "pie.id") %>%
+    filter(!str_detect(order, regex("(hold|discontinue)", ignore_case = TRUE))) %>%
+    mutate(order.date = floor_date(order.datetime, unit = "month")) %>%
+    group_by(pie.id) %>%
+    arrange(order.date) %>%
+    summarize(consult.date = first(order.date))
+
+# analyze.utilization <- raw.warfarin %>%
+#     mutate(dose.date = floor_date(med.datetime, unit = "month")) %>%
+#     group_by(pie.id, dose.date) %>%
+#     summarize(doses = n()) %>%
+#     left_join(tmp.consults, by = "pie.id")
 
 # identify unique warfarin courses; criteria are first dose in hospital, more
 # than 5 days since prior warfarin dose, or 2-4 since last warfarin dose and the
