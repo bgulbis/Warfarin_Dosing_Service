@@ -19,16 +19,68 @@ output:
 library(BGTools)
 library(dplyr)
 library(tidyr)
+library(stringr)
 library(ggplot2)
 library(scales)
+library(tableone)
 ```
 
 ```{r data, echo=FALSE}
 tmp <- get_rds("tidy")
+tmp <- get_rds("analysis")
+```
+
+## Warfarin Utilization
+
+```{r warfarin_use, fig.cap="Number of Patients Receiving Warfarin"}
+analyze.patients.all %>%
+    filter(year.cal >= 2013) %>%
+    ggplot(aes(x = year.cal)) +
+    geom_bar(fill = "skyblue") +
+    xlab("Year") +
+    ylab("Number of Patients") +
+    scale_y_continuous(limits = c(0, 3000))
+```
+
+```{r services, fig.cap="Top 10 Medical Services Utilizing Warfarin"}
+analyze.services.all %>%
+    mutate(service = factor(service, levels = names(sort(table(service), decreasing = TRUE)), ordered = TRUE)) %>%
+    group_by(service) %>%
+    summarize(count = n()) %>%
+    arrange(desc(count)) %>%
+    top_n(10, count) %>%
+    ggplot(aes(x = service, y = count)) +
+    geom_bar(stat = "identity", fill = "skyblue") +
+    xlab("Medical Service") +
+    ylab("Number of Patients") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r hospital_units, fig.cap="Top 10 Hospital Units for Warfarin Initiation"}
+analyze.locations.all %>%
+    mutate(location = factor(location, levels = names(sort(table(location), decreasing = TRUE)), ordered = TRUE)) %>%
+    group_by(location) %>%
+    summarize(count = n()) %>%
+    arrange(desc(count)) %>%
+    top_n(10, count) %>%
+    ggplot(aes(x = location, y = count)) +
+    geom_bar(stat = "identity", fill = "skyblue") +
+    xlab("Hospital Unit") +
+    ylab("Number of Patients") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Warfarin Dosing Service
+
+```{r service_utilization}
+analyze.utilization %>%
+    ggplot(aes(x = action.date, y = n, color = consult)) +
+    geom_line() +
+    geom_smooth()
 ```
 
 
-## Warfarin Dosing Service
+## Comparison
 
 ### Groups
 
@@ -44,6 +96,28 @@ groups <- total %>%
     spread(year, total)
 
 knitr::kable(groups, caption = "Number of patients per group")
+```
+
+### Demographics
+
+```{r demographics}
+demograph <- pts.include %>% 
+    inner_join(data.demographics, by = "pie.id") %>%
+    mutate(sex = factor(sex, levels = c("Female", "Male")),
+           race = str_replace_all(race, "Oriental", "Asian"),
+           race = factor(race, exclude = c("", "Unknown")))
+
+vars <- c("age", "sex", "race", "length.stay")
+fvars <- c("sex", "race")
+d <- filter(demograph, year == "current")
+tbl <- CreateTableOne(vars, "group", d, fvars)
+tbl <- print(tbl, nonnormal = c("age", "length.stay"), printToggle = FALSE)
+knitr::kable(tbl, caption = "Demographics for Current Year")
+
+d <- filter(demograph, year == "historical")
+tbl <- CreateTableOne(vars, "group", d, fvars)
+tbl <- print(tbl, nonnormal = c("age", "length.stay"), printToggle = FALSE)
+knitr::kable(tbl, caption = "Demographics for Historical Years")
 ```
 
 ### Indications
@@ -71,6 +145,10 @@ ggplot(data = counts, aes(x = indication, fill = group)) +
 ```{r disposition, fig.cap="Disposition on discharge"}
 counts <- pts.include %>% 
     inner_join(data.demographics, by = "pie.id") %>%
+    mutate(disposition = str_replace_all(disposition, regex(".*expired.*|.*hospice.*|.*deceased.*", ignore_case = TRUE), "Deceased/Hospice"),
+           disposition = str_replace_all(disposition, regex(".*home.*|.*against.*", ignore_case = TRUE), "Home"),
+           disposition = str_replace_all(disposition, regex(".*dc.*|.*transfer.*|.*care.*|.*skill.*", ignore_case = TRUE), "Transferred"),
+           disposition = factor(disposition)) %>%
     group_by(group, year, disposition) %>%
     summarize(n = n()) %>%
     left_join(total, by = c("group", "year")) %>%
