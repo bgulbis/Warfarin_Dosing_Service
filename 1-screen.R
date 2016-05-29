@@ -4,9 +4,17 @@ source("0-library.R")
 # library(edwr)
 
 # get list of patients receiving warfarin
-raw.patients <- read_edw_data(dir.patients, "patients") %>%
+tmp.patients <- read_edw_data(dir.patients, "patients")
+
+raw.patients <- tmp.patients %>%
     filter(age >= 18,
            discharge.datetime < mdy_hm("1/1/2016 00:00"))
+
+extra.patients <- tmp.patients %>%
+    filter(age >= 18,
+           discharge.datetime >= mdy_hm("1/1/2016 00:00"))
+
+concat_encounters(extra.patients$pie.id)
 
 edw.pie.all <- concat_encounters(raw.patients$pie.id, 900)
 # print(edw.pie.all)
@@ -121,7 +129,8 @@ analyze.services.all <- raw.services %>%
     inner_join(tmp.warfarin.dates.all, by = "pie.id") %>%
     filter(start.datetime <= warf.start,
            end.datetime >= warf.start) %>%
-    mutate(consult = ifelse(pie.id %in% tmp.consults$pie.id, TRUE, FALSE))
+    mutate(consult = pie.id %in% tmp.consults$pie.id,
+           historical = warf.start < mdy_hm("1/1/2015 00:00"))
 
 # find hospital unit where warfarin was started
 raw.locations <- read_edw_data(dir.patients, "locations") %>%
