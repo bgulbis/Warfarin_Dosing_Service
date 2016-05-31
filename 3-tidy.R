@@ -45,6 +45,13 @@ data.inr.inrange <- filter(data.labs.inrs, lab.datetime >= lab.start) %>%
     group_by(pie.id, lab) %>%
     calc_perc_time(threshold, meds = FALSE)
 
+threshold <- list(~lab.result >= 4)
+
+data.inr.supratx <- filter(data.labs.inrs, lab.datetime >= lab.start) %>%
+    calc_lab_runtime %>%
+    group_by(pie.id, lab) %>%
+    calc_perc_time(threshold, meds = FALSE)
+
 # warfarin doses ---------------------------------------
 
 data.meds <- read_edw_data(dir.data, "meds_sched") %>%
