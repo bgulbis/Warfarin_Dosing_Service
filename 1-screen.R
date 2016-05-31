@@ -33,8 +33,20 @@ raw.orders <- edwr::read_edw_data(dir.patients, "orders") %>%
 
 analyze.utilization <- raw.orders %>%
     group_by(pie.id, action.date, consult) %>%
+    select(pie.id, action.date, consult) %>%
+    arrange(action.date) %>%
+    distinct %>%
+    group_by(pie.id, action.date) %>%
+    mutate(value = TRUE,
+           consult = ifelse(consult == TRUE, "consult", "warfarin")) %>%
+    spread(consult, value) %>%
+    mutate(warfarin = ifelse(consult == TRUE & is.na(warfarin), TRUE, warfarin)) %>%
+    gather(order, value, consult, warfarin) %>%
+    arrange(action.date) %>%
+    filter(!is.na(value)) %>%
+    group_by(pie.id, action.date, order) %>%
     summarize(n = n()) %>%
-    group_by(action.date, consult) %>%
+    group_by(action.date, order) %>%
     summarize(n = n())
 
 tmp.consults <- read_edw_data(dir.data, "consults", "orders") %>%
