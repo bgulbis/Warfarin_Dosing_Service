@@ -19,50 +19,166 @@ output:
 library(BGTools)
 library(dplyr)
 library(tidyr)
+library(stringr)
 library(ggplot2)
+library(scales)
+library(tableone)
 ```
 
 ```{r data, echo=FALSE}
 tmp <- get_rds("tidy")
+tmp <- get_rds("analysis")
+```
+
+## Warfarin Utilization
+
+```{r warfarin_use, fig.cap="Number of Patients Receiving Warfarin"}
+analyze.patients.all %>%
+    filter(year.cal >= 2013) %>%
+    ggplot(aes(x = year.cal)) +
+    geom_bar(fill = "skyblue") +
+    xlab("Year") +
+    ylab("Number of Patients") +
+    scale_y_continuous(limits = c(0, 3000))
+```
+
+```{r services, fig.cap="Top 10 Medical Services Utilizing Warfarin"}
+analyze.services.all %>%
+    mutate(service = factor(service, levels = names(sort(table(service), decreasing = TRUE)), ordered = TRUE)) %>%
+    group_by(service) %>%
+    summarize(count = n()) %>%
+    arrange(desc(count)) %>%
+    top_n(10, count) %>%
+    ggplot(aes(x = service, y = count)) +
+    geom_bar(stat = "identity", fill = "skyblue") +
+    xlab("Medical Service") +
+    ylab("Number of Patients") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r hospital_units, fig.cap="Top 10 Hospital Units for Warfarin Initiation"}
+analyze.locations.all %>%
+    mutate(location = factor(location, levels = names(sort(table(location), decreasing = TRUE)), ordered = TRUE)) %>%
+    group_by(location) %>%
+    summarize(count = n()) %>%
+    arrange(desc(count)) %>%
+    top_n(10, count) %>%
+    ggplot(aes(x = location, y = count)) +
+    geom_bar(stat = "identity", fill = "skyblue") +
+    xlab("Hospital Unit") +
+    ylab("Number of Patients") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ## Warfarin Dosing Service
 
+```{r service_utilization}
+analyze.utilization %>%
+    ggplot(aes(x = action.date, y = n, color = consult)) +
+    geom_line() +
+    geom_smooth()
+```
+
+
+## Comparison
+
 ### Groups
 
-* Pharmacy Dosing Service (n = `r length(pts.exclude$Pharmacy)`)
-* Traditional Dosing (n = `r length(pts.exclude$Traditional)`)
+* Current: warfarin started between January 1, 2015 and December 31, 2015
+* Historical: warfarin started between July 1, 2012 and December 31, 2014
+
+```{r groups}
+total <- pts.include %>%
+    group_by(group, year) %>%
+    summarize(total = n())
+
+groups <- total %>%
+    spread(year, total)
+
+knitr::kable(groups, caption = "Number of patients per group")
+```
+
+### Demographics
+
+```{r demographics}
+demograph <- pts.include %>% 
+    inner_join(data.demographics, by = "pie.id") %>%
+    mutate(sex = factor(sex, levels = c("Female", "Male")),
+           race = str_replace_all(race, "Oriental", "Asian"),
+           race = factor(race, exclude = c("", "Unknown")))
+
+vars <- c("age", "sex", "race", "length.stay")
+fvars <- c("sex", "race")
+d <- filter(demograph, year == "current")
+tbl <- CreateTableOne(vars, "group", d, fvars)
+tbl <- print(tbl, nonnormal = c("age", "length.stay"), printToggle = FALSE)
+knitr::kable(tbl, caption = "Demographics for Current Year")
+
+d <- filter(demograph, year == "historical")
+tbl <- CreateTableOne(vars, "group", d, fvars)
+tbl <- print(tbl, nonnormal = c("age", "length.stay"), printToggle = FALSE)
+knitr::kable(tbl, caption = "Demographics for Historical Years")
+```
 
 ### Indications
 
 ```{r indications, fig.cap="Indications for warfarin use"}
-graph <- inner_join(pts.include, data.warfarin.indications, by = "pie.id") %>%
-    gather(indication, value, -pie.id, -group) %>%
+counts <- pts.include %>%
+    inner_join(data.warfarin.indications, by = "pie.id") %>%
+    gather(indication, value, -pie.id, -group, -year) %>%
     filter(value == TRUE) %>%
-    ggplot(aes(x = indication, fill = group)) +
-    geom_bar(position = "dodge") + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    group_by(group, year, indication) %>%
+    summarize(n = n()) %>%
+    left_join(total, by = c("group", "year")) %>%
+    mutate(perc = n / total) 
 
-print(graph)
+ggplot(data = counts, aes(x = indication, fill = group)) +
+    geom_bar(aes(y = perc), stat = "identity", position = "dodge") + 
+    facet_grid(year ~ .) +
+    ylab("Patients (%)") +
+    scale_y_continuous(labels = percent) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+### Dispositions
+
+```{r disposition, fig.cap="Disposition on discharge"}
+counts <- pts.include %>% 
+    inner_join(data.demographics, by = "pie.id") %>%
+    mutate(disposition = str_replace_all(disposition, regex(".*expired.*|.*hospice.*|.*deceased.*", ignore_case = TRUE), "Deceased/Hospice"),
+           disposition = str_replace_all(disposition, regex(".*home.*|.*against.*", ignore_case = TRUE), "Home"),
+           disposition = str_replace_all(disposition, regex(".*dc.*|.*transfer.*|.*care.*|.*skill.*", ignore_case = TRUE), "Transferred"),
+           disposition = factor(disposition)) %>%
+    group_by(group, year, disposition) %>%
+    summarize(n = n()) %>%
+    left_join(total, by = c("group", "year")) %>%
+    mutate(perc = n / total) 
+    
+ggplot(data = counts, aes(x = disposition, fill = group)) +
+    geom_bar(aes(y = perc), stat = "identity", position = "dodge") + 
+    facet_grid(year ~ .) +
+    ylab("Patients (%)") +
+    scale_y_continuous(labels = percent) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
 
 ## Exploratory Plots
 
 ### Change in INR
 ```{r inr, fig.cap="Change in INR after starting warfarin"}
-graph <- inner_join(pts.include, data.labs.inrs, by = "pie.id") %>%
+pts.include %>%
+    inner_join(data.labs.inrs, by = "pie.id") %>%
     calc_lab_runtime(units = "days") %>%
     ggplot(aes(x = run.time, y = lab.result)) +
-    facet_grid(. ~ group) +
-    geom_vline(xintercept = 0, linetype = "dashed") +
+    facet_grid(year ~ group) +
     geom_point(alpha = 0.3) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "green") +
     geom_smooth(color = "blue") + 
     xlab("Day") +
     ylab("INR") +
     scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
     coord_cartesian(xlim = c(-2, 10), ylim = c(1, 4)) 
-
-print(graph)
 ```
 
 ### INR in therapuetic range
@@ -71,24 +187,24 @@ pts.include %>%
     inner_join(data.inr.inrange, by = "pie.id") %>%
     ggplot(aes(x = group, y = perc.time)) +
     geom_boxplot() +
+    facet_grid(year ~ .) +
     ylab("Time in Therapeutic Range (%)")
 ```
 
 ### Change in Hgb
 ```{r hgb, fig.cap="Change in hemoglobin after starting warfarin"}
-graph <- inner_join(pts.include, data.labs.hgb, by = "pie.id") %>%
+pts.include %>%
+    inner_join(data.labs.hgb, by = "pie.id") %>%
     calc_lab_runtime(units = "days") %>%
     ggplot(aes(x = run.time, y = lab.result)) +
-    facet_grid(. ~ group) +
-    geom_vline(xintercept = 0, linetype = "dashed") +
+    facet_grid(year ~ group) +
     geom_point(alpha = 0.3) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "green") +
     geom_smooth(color = "blue") + 
     xlab("Day") +
     ylab("Hgb (g/dL)") +
     scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
     coord_cartesian(xlim = c(-2, 10), ylim = c(5, 15)) 
-
-print(graph)
 ```
 
 

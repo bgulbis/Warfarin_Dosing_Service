@@ -7,7 +7,7 @@ tmp <- get_rds(dir.tidy)
 pts.exclude <- list(Screen = pts.screen$pie.id)
 pts.include <- pts.screen
 
-# dti/doac ----
+# dti/doac ---------------------------------------------
 # exclude if concurent DTI or DOAC given
 excl.dti <- read_edw_data(dir.data, "^dti", "meds_continuous") %>%
     inner_join(data.warfarin.dates, by = "pie.id") %>%
@@ -30,7 +30,7 @@ pts.exclude$Concurrent_DOAcs <- excl.doac$pie.id
 
 pts.include <- anti_join(pts.include, excl.doac, by = "pie.id")
 
-# lfts ----
+# lfts -------------------------------------------------
 # exclude if elevated LFTs: t.bili > 5.4; ast > 185 + alt > 430; alt > 860
 raw.lfts <- read_edw_data(dir.data, "labs_lfts", "labs") %>%
     semi_join(pts.include, by = "pie.id") %>%
@@ -66,7 +66,7 @@ pts.exclude$Elevated_LFTs <- excl.lfts$pie.id
 
 pts.include <- anti_join(pts.include, excl.lfts, by = "pie.id")
 
-# inr goal ----
+# inr goal ---------------------------------------------
 # exclude patients without an INR goal
 data.warfarin.goals <- read_edw_data(dir.data, "goals", "warfarin") %>%
     semi_join(pts.include, by = "pie.id") %>%
@@ -84,7 +84,7 @@ pts.exclude$Missing_INR_Goals <- excl.goals$pie.id
 
 pts.include <- anti_join(pts.include, excl.goals, by = "pie.id")
 
-# baseline inr ----
+# baseline inr -----------------------------------------
 # remove if baseline INR is > 1.5; must be within 48 hours of warfarin
 tmp.inrs <- read_edw_data(dir.data, "labs_coag", "labs") %>%
     semi_join(pts.include, by = "pie.id") %>%
@@ -113,7 +113,7 @@ pts.exclude$Elevated_Baseline_INR <- excl.inr$pie.id
 
 pts.include <- anti_join(pts.include, excl.inr, by = "pie.id")
 
-# readmits ----
+# readmits ---------------------------------------------
 # make a list of all person id's, then get list of all encounters for those
 # patients; use the list to find readmit encounters in study and
 raw.demographics <- read_edw_data(dir.data, "demographics") %>%
@@ -158,7 +158,7 @@ data.encounters.after <- left_join(raw.encounters, tmp.encounters,
                                      units = "days")) %>%
     filter(encounter.next <= 180)
 
-# make groups ----
+# make groups ------------------------------------------
 raw.consults <- read_edw_data(dir.data, "consults", "orders") %>%
     semi_join(pts.include, by = "pie.id")
 
@@ -202,7 +202,15 @@ pts.exclude$Traditional <- pts.control$pie.id
 data.warfarin.dates <- semi_join(data.warfarin.dates, pts.include, by = "pie.id")
 data.warfarin.goals <- semi_join(data.warfarin.goals, pts.include, by = "pie.id")
 
-# save data ----
+# current patients -------------------------------------
+
+tmp.2015 <- inner_join(pts.include, data.warfarin.dates, by = "pie.id") %>%
+    filter(year(warf.start) == 2015)
+
+pts.include <- mutate(pts.include, year = ifelse(pie.id %in% tmp.2015$pie.id,
+                                                 "current", "historical"))
+
+# save data --------------------------------------------
 save_rds(dir.tidy, "pts")
 save_rds(dir.tidy, "data")
 

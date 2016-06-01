@@ -4,6 +4,15 @@ source("0-library.R")
 
 tmp <- get_rds(dir.tidy)
 
+# demographics -----------------------------------------
+
+data.demographics <- read_edw_data(dir.data, "demographics") %>%
+    semi_join(pts.include, by = "pie.id") %>%
+    distinct(pie.id)
+
+data.visits <- read_edw_data(dir.data, "visits") %>%
+    semi_join(pts.include, by = "pie.id")
+
 # warfarin indications ---------------------------------
 
 data.warfarin.indications <- read_edw_data(dir.data, "goals", "warfarin") %>%
@@ -35,6 +44,23 @@ data.inr.inrange <- filter(data.labs.inrs, lab.datetime >= lab.start) %>%
     calc_lab_runtime %>%
     group_by(pie.id, lab) %>%
     calc_perc_time(threshold, meds = FALSE)
+
+threshold <- list(~lab.result >= 4)
+
+data.inr.supratx <- filter(data.labs.inrs, lab.datetime >= lab.start) %>%
+    calc_lab_runtime %>%
+    group_by(pie.id, lab) %>%
+    calc_perc_time(threshold, meds = FALSE)
+
+# warfarin doses ---------------------------------------
+
+data.meds <- read_edw_data(dir.data, "meds_sched") %>%
+    semi_join(pts.include, by = "pie.id")
+
+tmp.warf <- filter(data.meds, med == "warfarin") %>%
+    mutate(dose.date = floor_date(med.datetime, unit = "day")) %>%
+    group_by(pie.id, dose.date) %>%
+    summarize(med.dose = sum(med.dose))
 
 # hgb drop ---------------------------------------------
 
