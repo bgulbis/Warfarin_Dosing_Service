@@ -1,7 +1,7 @@
 Warfarin Pharmacy Dosing Service Analysis
 ========================================================
 author: Brian Gulbis
-date: April 2016
+date: June 2016
 autosize: true
 
 Annual Warfarin Utilization
@@ -93,7 +93,7 @@ print(graph)
 
 Dosing Service Utilization by Medical Service
 ========================================================
-```{r ds_med_service}
+```{r ds_med_service_curr}
 tmp <- analyze.services.all %>%
     mutate(service = factor(service, levels = names(sort(table(service), decreasing = TRUE)), ordered = TRUE)) %>%
     group_by(service, consult, historical) %>%
@@ -108,6 +108,22 @@ tmp$`FALSE`[tmp$`FALSE` < 0] <- 0
 
 tmp <- gather(tmp, consult, count, -service, -historical)
 
+d <- filter(tmp, historical == FALSE)
+
+ggplot(data = d, aes(x = service, y = count, fill = consult)) +
+    geom_bar(stat = "identity") +
+    # facet_grid(historical ~ .) +
+    ggtitle("Warfarin Dosing Service Utilization Among\nTop 10 Medical Services Ordering Warfarin") +
+    xlab("Medical Service") +
+    ylab("Number of Patients") +
+    scale_fill_brewer(palette = "Set1") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Dosing Service Utilization by Medical Service (vs. Historical)
+========================================================
+```{r ds_med_service}
+
 ggplot(data = tmp, aes(x = service, y = count, fill = consult)) +
     geom_bar(stat = "identity") +
     facet_grid(historical ~ .) +
@@ -117,7 +133,6 @@ ggplot(data = tmp, aes(x = service, y = count, fill = consult)) +
     scale_fill_brewer(palette = "Set1") +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-
 
 Utilization by Hospital Unit
 ========================================================

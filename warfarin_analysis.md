@@ -1,7 +1,7 @@
 Warfarin Pharmacy Dosing Service Analysis
 ========================================================
 author: Brian Gulbis
-date: April 2016
+date: June 2016
 autosize: true
 
 Annual Warfarin Utilization
@@ -28,8 +28,11 @@ Utilization by Medical Service
 
 Dosing Service Utilization by Medical Service
 ========================================================
-![plot of chunk ds_med_service](warfarin_analysis-figure/ds_med_service-1.png)
+![plot of chunk ds_med_service_curr](warfarin_analysis-figure/ds_med_service_curr-1.png)
 
+Dosing Service Utilization by Medical Service (vs. Historical)
+========================================================
+![plot of chunk ds_med_service](warfarin_analysis-figure/ds_med_service-1.png)
 
 Utilization by Hospital Unit
 ========================================================
