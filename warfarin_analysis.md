@@ -10,11 +10,26 @@ Annual Warfarin Utilization
 
 
 
+
+
 ![plot of chunk graph_utilization](warfarin_analysis-figure/graph_utilization-1.png)
+
+Utilization of Pharmacy Warfarin Dosing Service
+========================================================
+![plot of chunk dose_service_use](warfarin_analysis-figure/dose_service_use-1.png)
+
+Utilization of Pharmacy Warfarin Dosing Service
+========================================================
+![plot of chunk dose_service_use2](warfarin_analysis-figure/dose_service_use2-1.png)
 
 Utilization by Medical Service
 ========================================================
 ![plot of chunk graph_services](warfarin_analysis-figure/graph_services-1.png)
+
+Dosing Service Utilization by Medical Service
+========================================================
+![plot of chunk ds_med_service](warfarin_analysis-figure/ds_med_service-1.png)
+
 
 Utilization by Hospital Unit
 ========================================================
@@ -45,3 +60,61 @@ Methods: Exclusion
     - ALT > 10x ULN
     - T.Bili > 3x ULN
 * Missing goals of therapy data
+
+Demographics
+========================================================
+
+|                           |pharmacy             |traditional          |p      |test    |
+|:--------------------------|:--------------------|:--------------------|:------|:-------|
+|n                          |402                  |287                  |       |        |
+|age (median [IQR])         |58.00 [42.25, 68.75] |64.00 [54.00, 72.00] |<0.001 |nonnorm |
+|sex = Male (%)             |240 (59.7)           |183 (64.0)           |0.290  |        |
+|race (%)                   |                     |                     |0.093  |        |
+|African American           |104 (28.4)           |74 (27.7)            |       |        |
+|Asian                      |12 ( 3.3)            |1 ( 0.4)             |       |        |
+|Native Am.                 |0 ( 0.0)             |1 ( 0.4)             |       |        |
+|Other                      |78 (21.3)            |59 (22.1)            |       |        |
+|White/Caucasian            |172 (47.0)           |132 (49.4)           |       |        |
+|length.stay (median [IQR]) |12.10 [7.71, 19.83]  |13.71 [8.02, 24.12]  |0.110  |nonnorm |
+
+Demographics (Historical)
+========================================================
+
+|                           |pharmacy             |traditional          |p      |test    |
+|:--------------------------|:--------------------|:--------------------|:------|:-------|
+|n                          |866                  |894                  |       |        |
+|age (median [IQR])         |59.00 [46.00, 71.00] |62.00 [51.00, 73.00] |<0.001 |nonnorm |
+|sex = Male (%)             |505 (58.3)           |526 (58.9)           |0.840  |        |
+|race (%)                   |                     |                     |0.434  |        |
+|African American           |245 (31.2)           |228 (28.1)           |       |        |
+|Asian                      |15 ( 1.9)            |13 ( 1.6)            |       |        |
+|Latin American             |1 ( 0.1)             |0 ( 0.0)             |       |        |
+|Native Am.                 |0 ( 0.0)             |1 ( 0.1)             |       |        |
+|Other                      |133 (16.9)           |131 (16.2)           |       |        |
+|White/Caucasian            |392 (49.9)           |437 (54.0)           |       |        |
+|length.stay (median [IQR]) |11.85 [7.38, 18.62]  |10.94 [6.89, 17.28]  |0.024  |nonnorm |
+
+Anticoagulation Indications
+========================================================
+![plot of chunk indications](warfarin_analysis-figure/indications-1.png)
+
+Disposition
+========================================================
+![plot of chunk disposition](warfarin_analysis-figure/disposition-1.png)
+
+Changes in INR
+========================================================
+![plot of chunk inr](warfarin_analysis-figure/inr-1.png)
+
+Time in Therapeutic Range
+========================================================
+![plot of chunk ttr](warfarin_analysis-figure/ttr-1.png)
+
+Time Highly Supratherapeutic
+========================================================
+![plot of chunk time_above4](warfarin_analysis-figure/time_above4-1.png)
+
+Changes in Hemoglobin
+========================================================
+![plot of chunk hgb](warfarin_analysis-figure/hgb-1.png)
+
