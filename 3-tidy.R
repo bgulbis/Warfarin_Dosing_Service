@@ -13,6 +13,52 @@ data.demographics <- read_edw_data(dir.data, "demographics") %>%
 data.visits <- read_edw_data(dir.data, "visits") %>%
     semi_join(pts.include, by = "pie.id")
 
+# new therapy ------------------------------------------
+
+# get new / previous data from anticoagulation goals
+tmp.new <- read_edw_data(dir.data, "goals", "warfarin") %>%
+    semi_join(pts.include, by = "pie.id") %>%
+    filter(warfarin.event == "warfarin therapy") %>%
+    group_by(pie.id) %>%
+    summarize(warfarin.result = last(warfarin.result))
+
+raw.meds.home <- read_edw_data(dir.data, "meds_outpt", "home_meds") %>%
+    semi_join(pts.include, by = "pie.id") %>%
+    filter(med.type == "Recorded / Home Meds")
+
+# get patients with home anticoagulant
+anticoag <- c("warfarin", "dabigatran", "rivaroxaban", "apixaban", "edoxaban")
+tmp.home.anticoag <- filter(raw.meds.home, med %in% anticoag) %>%
+    mutate(home.med = ifelse(med == "warfarin", "warfarin", "doac")) %>%
+    select(pie.id, home.med) %>%
+    group_by(pie.id) %>%
+    arrange(desc(home.med)) %>%
+    distinct
+
+# find patients with ICD code for chronic anticoag
+# icd9: V58.61; icd10: Z79.01
+# tmp.anticoag.icd <- edwr::read_edw_data(dir.data, "diagnosis") %>%
+#     filter((code.source == "ICD-9-CM" & diag.code == "V58.61") |
+#                (code.source == "ICD-10-CM" & diag.code == "Z79.01")) %>%
+#     select(pie.id, diag.code) %>%
+#     distinct
+
+raw.labs.inrs <- read_edw_data(dir.data, "labs_coag", "labs") %>%
+    semi_join(pts.include, by = "pie.id") %>%
+    tidy_data("labs")
+
+tmp.inr <- raw.labs.inrs %>%
+    filter(lab == "inr") %>%
+    group_by(pie.id) %>%
+    arrange(lab.datetime) %>%
+    summarize(inr.first = first(lab.result))
+
+data.new <- full_join(tmp.inr, tmp.new, by = "pie.id") %>%
+    full_join(tmp.home.anticoag, by = "pie.id") %>%
+    # full_join(tmp.anticoag.icd, by = "pie.id") %>%
+    mutate(therapy = check_new(warfarin.result, home.med, inr.first)) %>%
+    select(pie.id, therapy)
+
 # warfarin indications ---------------------------------
 
 data.warfarin.indications <- read_edw_data(dir.data, "goals", "warfarin") %>%
@@ -25,9 +71,7 @@ data.warfarin.indications <- read_edw_data(dir.data, "goals", "warfarin") %>%
 
 # inr values -------------------------------------------
 
-data.labs.inrs <- read_edw_data(dir.data, "labs_coag", "labs") %>%
-    semi_join(pts.include, by = "pie.id") %>%
-    tidy_data("labs") %>%
+data.labs.inrs <- raw.labs.inrs %>%
     inner_join(data.warfarin.dates, by = "pie.id") %>%
     rename(lab.start = warf.start) %>%
     inner_join(data.warfarin.goals, by = "pie.id") %>%
