@@ -209,7 +209,7 @@ knitr::kable(ptbl, caption = "Demographics for Historical Years")
 ```{r indications, fig.cap="Indications for warfarin use", fig.height=6, fig.width=6}
 d <- pts.include %>%
     inner_join(data.warfarin.indications, by = "pie.id") %>%
-    gather(indication, value, -pie.id, -group, -year) %>%
+    gather(indication, value, -pie.id, -group, -year, -therapy) %>%
     filter(value == TRUE) %>%
     group_by(group, year, indication) %>%
     summarize(n = n()) %>%
@@ -227,7 +227,6 @@ g <- ggplot(d, aes(x = indication, fill = group)) +
 
 print(g)
 ```
-
 
 ### Dispositions
 
@@ -267,10 +266,10 @@ d <- pts.include %>%
     inner_join(data.labs.inrs, by = "pie.id") %>%
     calc_lab_runtime(units = "days")
 
-g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
+g <- ggplot(d, aes(x = run.time, y = lab.result, color = group)) +
     geom_point(alpha = 0.3, size = 0.5) +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "green") +
-    geom_smooth(aes(color = group)) + 
+    geom_vline(xintercept = 0, linetype = "dashed", color = "dark blue") +
+    geom_smooth() + 
     ggtitle("Change in INR after starting warfarin") +
     xlab("Day") +
     ylab("INR") +
@@ -286,6 +285,28 @@ print(g)
 ```{r}
 print(g + facet_grid(year ~ therapy))
 ```
+
+```{r}
+df <- d %>%
+    filter(year == "current") %>%
+    group_by(pie.id, group, year) %>%
+    summarize(first.inr = first(lab.result),
+              last.inr = last(lab.result),
+              num.days = first(warf.days)) %>%
+    mutate(change.inr = last.inr - first.inr)
+
+g <- ggplot(df, aes(x = group, y = change.inr)) +
+    geom_boxplot() +
+    ggtitle("Change in INR") +
+    ylab("INR")
+
+print(g)
+```
+
+```{r}
+kruskal.test(x = df$change.inr, g = as.factor(df$group))
+```
+
 
 ### Time in Therapuetic Range
 
