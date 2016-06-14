@@ -14,25 +14,17 @@ Annual Warfarin Utilization
 
 ![plot of chunk graph_utilization](warfarin_analysis-figure/graph_utilization-1.png)
 
-Utilization of Pharmacy Warfarin Dosing Service
+Utilization of Pharmacy Dosing Service
 ========================================================
 ![plot of chunk dose_service_use](warfarin_analysis-figure/dose_service_use-1.png)
 
-Utilization of Pharmacy Warfarin Dosing Service
+Orders by Pharmacy Dosing Service
 ========================================================
 ![plot of chunk dose_service_use2](warfarin_analysis-figure/dose_service_use2-1.png)
-
-Utilization by Medical Service
-========================================================
-![plot of chunk graph_services](warfarin_analysis-figure/graph_services-1.png)
 
 Dosing Service Utilization by Medical Service
 ========================================================
 ![plot of chunk ds_med_service_curr](warfarin_analysis-figure/ds_med_service_curr-1.png)
-
-Utilization by Hospital Unit
-========================================================
-![plot of chunk graph_locations](warfarin_analysis-figure/graph_locations-1.png)
 
 Comparison
 ========================================================
@@ -59,6 +51,7 @@ Methods: Exclusion
     - ALT > 10x ULN
     - T.Bili > 3x ULN
 * Missing goals of therapy data
+* Readmission encounters
 
 Demographics
 ========================================================
@@ -86,9 +79,13 @@ Disposition
 ========================================================
 ![plot of chunk disposition](warfarin_analysis-figure/disposition-1.png)
 
-Changes in INR
+INR Response
 ========================================================
 ![plot of chunk inr](warfarin_analysis-figure/inr-1.png)
+
+Change in INR
+========================================================
+![plot of chunk inr2](warfarin_analysis-figure/inr2-1.png)
 
 Time in Therapeutic Range
 ========================================================
@@ -98,9 +95,13 @@ Time with Critical INR Values
 ========================================================
 ![plot of chunk time_above4](warfarin_analysis-figure/time_above4-1.png)
 
-Changes in Hemoglobin
+Hemoglobin Response
 ========================================================
 ![plot of chunk hgb](warfarin_analysis-figure/hgb-1.png)
+
+Change in Hemoglobin
+========================================================
+![plot of chunk hgb2](warfarin_analysis-figure/hgb2-1.png)
 
 Historical Comparison
 ========================================================

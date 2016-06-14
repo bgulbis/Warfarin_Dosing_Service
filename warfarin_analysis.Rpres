@@ -40,7 +40,7 @@ graph <- analyze.patients.all %>%
 print(graph)
 ```
 
-Utilization of Pharmacy Warfarin Dosing Service
+Utilization of Pharmacy Dosing Service
 ========================================================
 ```{r dose_service_use, warning=FALSE}
 ggplot(data = analyze.utilization, aes(x = action.date, y = n, color = order)) +
@@ -53,7 +53,7 @@ ggplot(data = analyze.utilization, aes(x = action.date, y = n, color = order)) +
     xlim(c(mdy_hm("1/1/2013 00:00"), mdy_hm("12/31/2015 23:59")))
 ```
 
-Utilization of Pharmacy Warfarin Dosing Service
+Orders by Pharmacy Dosing Service
 ========================================================
 ```{r dose_service_use2, warning=FALSE}
 group_by(analyze.utilization, action.date) %>%
@@ -66,25 +66,6 @@ group_by(analyze.utilization, action.date) %>%
     xlab("Date") +
     ylab("Orders (%)") +
     xlim(c(mdy_hm("1/1/2013 00:00"), mdy_hm("12/31/2015 23:59")))
-```
-
-Utilization by Medical Service
-========================================================
-```{r graph_services}
-graph <- analyze.services.all %>%
-    mutate(service = ordered(service, levels = names(sort(table(service), decreasing = TRUE)))) %>%
-    group_by(service) %>%
-    summarize(count = n()) %>%
-    arrange(desc(count)) %>%
-    top_n(10, count) %>%
-    ggplot(aes(x = service, y = count)) +
-    geom_bar(stat = "identity") +
-    ggtitle("Top 10 Medical Services Utilizing Warfarin, 2013-2015") +
-    xlab("Medical Service") +
-    ylab("Number of Patients") +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-print(graph)
 ```
 
 Dosing Service Utilization by Medical Service
@@ -116,25 +97,6 @@ ggplot(data = d, aes(x = service, y = count, fill = consult)) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-Utilization by Hospital Unit
-========================================================
-```{r graph_locations}
-graph <- analyze.locations.all %>%
-    mutate(location = ordered(location, levels = names(sort(table(location), decreasing = TRUE)))) %>%
-    group_by(location) %>%
-    summarize(count = n()) %>%
-    arrange(desc(count)) %>%
-    top_n(10, count) %>%
-    ggplot(aes(x = location, y = count)) +
-    geom_bar(stat = "identity") +
-    ggtitle("Top 10 Hospital Units for Warfarin Initiation, 2013-2015") +
-    xlab("Hospital Unit") +
-    ylab("Number of Patients") +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-print(graph)
-```
-
 Comparison
 ========================================================
 
@@ -160,6 +122,7 @@ Methods: Exclusion
     - ALT > 10x ULN
     - T.Bili > 3x ULN
 * Missing goals of therapy data
+* Readmission encounters
 
 Demographics
 ========================================================
@@ -194,7 +157,7 @@ Anticoagulation Indications
 ```{r indications}
 counts <- pts.include %>%
     inner_join(data.warfarin.indications, by = "pie.id") %>%
-    gather(indication, value, -pie.id, -group, -year) %>%
+    gather(indication, value, -pie.id, -group, -year, -therapy) %>%
     filter(value == TRUE,
            year == "current") %>%
     group_by(group, year, indication) %>%
@@ -236,59 +199,95 @@ ggplot(data = counts, aes(x = disposition, fill = group)) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-Changes in INR
+INR Response
 ========================================================
 ```{r inr}
-pts.include %>%
+d <- pts.include %>%
     inner_join(data.labs.inrs, by = "pie.id") %>%
     calc_lab_runtime(units = "days") %>%
-    filter(year == "current") %>%
-    ggplot(aes(x = run.time, y = lab.result, group = group)) +
+    filter(year == "current")
+
+g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
     geom_point(alpha = 0.3, size = 0.5) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "dark blue") +
     geom_smooth(aes(color = group)) +
-    ggtitle("Change in INR after starting warfarin") +
+    ggtitle("INR response after starting warfarin") +
     xlab("Day") +
     ylab("INR") +
     scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
     scale_color_brewer(palette = "Set1") +
-    coord_cartesian(xlim = c(-2, 10), ylim = c(1, 3.5))
+    coord_cartesian(xlim = c(-2, 10), ylim = c(1, 3))
+
+print(g)
+```
+
+Change in INR
+========================================================
+```{r inr2}
+df <- d %>%
+    group_by(pie.id, group, year) %>%
+    summarize(first.inr = first(lab.result),
+              last.inr = last(lab.result),
+              num.days = first(warf.days)) %>%
+    mutate(change.inr = last.inr - first.inr)
+
+p <- kruskal.test(x = df$change.inr, g = as.factor(df$group))
+lab <- str_c("p-value = ", round(p$p.value, 3))
+
+g <- ggplot(df, aes(x = group, y = change.inr)) +
+    geom_boxplot() +
+    annotate("text", x = 1.5, y = 3, label = lab) +
+    ggtitle("Change in INR") +
+    ylab("INR Difference")
+
+print(g)
 ```
 
 Time in Therapeutic Range
 ========================================================
 ```{r ttr}
-pts.include %>%
+d <- pts.include %>%
     inner_join(data.inr.inrange, by = "pie.id") %>%
-    filter(year == "current") %>%
-    ggplot(aes(x = group, y = perc.time)) +
+    filter(year == "current")
+
+p <- kruskal.test(x = d$perc.time, g = as.factor(d$group))
+
+g <- ggplot(d, aes(x = group, y = perc.time)) +
     geom_boxplot() +
     ggtitle("Percent of time INR is within therapeutic range") +
     ylab("Time in Therapeutic Range") +
     scale_y_continuous(labels = percent)
+
+print(g)
 ```
 
 Time with Critical INR Values
 ========================================================
 ```{r time_above4}
-pts.include %>%
+d <- pts.include %>%
     inner_join(data.inr.supratx, by = "pie.id") %>%
-    filter(year == "current") %>%
-    ggplot(aes(x = group, y = perc.time)) +
+    filter(year == "current")
+
+p <- kruskal.test(x = d$perc.time, g = as.factor(d$group))
+
+g <- ggplot(d, aes(x = group, y = perc.time)) +
     geom_boxplot() +
     ggtitle("Percent of time INR is critical (above 4)") +
     ylab("Time with Critical INR") +
     scale_y_continuous(labels = percent)
+
+print(g)
 ```
 
-Changes in Hemoglobin
+Hemoglobin Response
 ========================================================
 ```{r hgb}
-pts.include %>%
+d <- pts.include %>%
     inner_join(data.labs.hgb, by = "pie.id") %>%
     calc_lab_runtime(units = "days") %>%
-    filter(year == "current") %>%
-    ggplot(aes(x = run.time, y = lab.result, group = group)) +
+    filter(year == "current")
+
+g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
     geom_point(alpha = 0.3, size = 0.5) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "dark blue") +
     geom_smooth(aes(color = group)) +
@@ -298,6 +297,29 @@ pts.include %>%
     scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
     scale_color_brewer(palette = "Set1") +
     coord_cartesian(xlim = c(-2, 10), ylim = c(7, 12))
+
+print(g)
+```
+
+Change in Hemoglobin
+========================================================
+```{r hgb2}
+df <- d %>%
+    group_by(pie.id, group, year) %>%
+    summarize(first.inr = first(lab.result),
+              last.inr = last(lab.result)) %>%
+    mutate(change.inr = last.inr - first.inr)
+
+p <- kruskal.test(x = df$change.inr, g = as.factor(df$group))
+lab <- str_c("p-value = ", round(p$p.value, 3))
+
+g <- ggplot(df, aes(x = group, y = change.inr)) +
+    geom_boxplot() +
+    annotate("text", x = 1.5, y = 2.5, label = lab) +
+    ggtitle("Change in Hemoglobin") +
+    ylab("Hemoglobin Difference (g/dL)")
+
+print(g)
 ```
 
 Historical Comparison
