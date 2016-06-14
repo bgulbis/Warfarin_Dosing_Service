@@ -171,27 +171,35 @@ knitr::kable(groups, caption = "Number of patients per group")
 
 ### Demographics
 
-#### Current
+#### All Patients
 ```{r demographics, results='asis'}
 demograph <- pts.include %>% 
     inner_join(data.demographics, by = "pie.id") %>%
+    inner_join(data.measures, by = "pie.id") %>%
     mutate(sex = factor(sex, levels = c("Female", "Male")),
            race = str_replace_all(race, "Oriental", "Asian"),
            race = factor(race, exclude = c("", "Unknown")))
 
-vars <- c("age", "sex", "race", "length.stay", "therapy")
+vars <- c("age", "sex", "bmi", "race", "length.stay", "therapy")
 fvars <- c("sex", "race", "therapy")
+tbl <- CreateTableOne(vars, "group", demograph, fvars)
+ptbl <- print(tbl, nonnormal = c("age", "bmi", "length.stay"), printToggle = FALSE)
+knitr::kable(ptbl, caption = "Demographics for Current Year")
+```
+
+#### Current
+```{r demograph_curr, results='asis'}
 d <- filter(demograph, year == "current")
 tbl <- CreateTableOne(vars, "group", d, fvars)
-ptbl <- print(tbl, nonnormal = c("age", "length.stay"), printToggle = FALSE)
-knitr::kable(ptbl, caption = "Demographics for Current Year")
+ptbl <- print(tbl, nonnormal = c("age", "bmi", "length.stay"), printToggle = FALSE)
+knitr::kable(ptbl, caption = "Demographics for Historical Years")
 ```
 
 #### Historical
 ```{r demograph_hist, results='asis'}
 d <- filter(demograph, year == "historical")
 tbl <- CreateTableOne(vars, "group", d, fvars)
-ptbl <- print(tbl, nonnormal = c("age", "length.stay"), printToggle = FALSE)
+ptbl <- print(tbl, nonnormal = c("age", "bmi", "length.stay"), printToggle = FALSE)
 knitr::kable(ptbl, caption = "Demographics for Historical Years")
 ```
 
