@@ -31,7 +31,6 @@ check_new <- function(therapy, med, inr) {
         x[med[[i]] == "warfarin" | (inr[[i]] >= 1.7 & is.na(med[[i]]))] <- "Previous"
         x[is.na(x) & inr[[i]] < 1.7] <- "New"
         x
-    }
-    )
+    })
 }
 
