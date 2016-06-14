@@ -169,12 +169,13 @@ knitr::kable(groups, caption = "Number of patients per group")
 ```{r demographics, results='asis'}
 demograph <- pts.include %>% 
     inner_join(data.demographics, by = "pie.id") %>%
+    inner_join(data.new, by = "pie.id") %>%
     mutate(sex = factor(sex, levels = c("Female", "Male")),
            race = str_replace_all(race, "Oriental", "Asian"),
            race = factor(race, exclude = c("", "Unknown")))
 
-vars <- c("age", "sex", "race", "length.stay")
-fvars <- c("sex", "race")
+vars <- c("age", "sex", "race", "length.stay", "therapy")
+fvars <- c("sex", "race", "therapy")
 d <- filter(demograph, year == "current")
 tbl <- CreateTableOne(vars, "group", d, fvars)
 ptbl <- print(tbl, nonnormal = c("age", "length.stay"), printToggle = FALSE)
