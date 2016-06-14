@@ -24,6 +24,7 @@ library(tableone)
 ```{r data}
 tmp <- get_rds("tidy")
 tmp <- get_rds("analysis")
+pts.include <- inner_join(pts.include, data.new, by = "pie.id")
 ```
 
 ```{r graph_utilization}
@@ -170,20 +171,21 @@ total <- pts.include %>%
 
 demograph <- pts.include %>%
     inner_join(data.demographics, by = "pie.id") %>%
+    inner_join(data.measures, by = "pie.id") %>%
     mutate(sex = factor(sex, levels = c("Female", "Male")),
            race = str_replace_all(race, "Oriental", "Asian"),
            race = factor(race, exclude = c("", "Unknown")))
 
-vars <- c("age", "sex", "race", "length.stay")
-fvars <- c("sex", "race")
-d <- filter(demograph, year == "current")
-tbl <- CreateTableOne(vars, "group", d, fvars)
-ptbl <- print(tbl, nonnormal = c("age", "length.stay"), printToggle = FALSE)
+names(demograph) <- str_to_title(names(demograph))
+names(demograph)[9] <- "Length of Stay"
+names(demograph)[15] <- "BMI"
 
-rownames(ptbl)[2:4] <- str_to_title(rownames(ptbl)[2:4])
-rownames(ptbl)[5:9] <- str_c("-", rownames(ptbl)[5:9])
-rownames(ptbl)[10] <- "Length of Stay"
-
+vars <- c("Age", "Sex", "BMI", "Race", "Length of Stay", "Therapy")
+fvars <- c("Sex", "Race", "Therapy")
+d <- filter(demograph, Year == "current")
+tbl <- CreateTableOne(vars, "Group", d, fvars)
+ptbl <- print(tbl, nonnormal = c("Age", "BMI", "Length of Stay"), printToggle = FALSE, cramVars = "Therapy")
+rownames(ptbl)[6:10] <- str_c("-", rownames(ptbl)[6:10])
 knitr::kable(ptbl[, 1:3], caption = "Demographics")
 ```
 
@@ -307,21 +309,16 @@ Historical Comparison
 Historical Demographics
 ========================================================
 ```{r demograph_hist}
-d <- filter(demograph, year == "historical")
-tbl <- CreateTableOne(vars, "group", d, fvars)
-ptbl <- print(tbl, nonnormal = c("age", "length.stay"), printToggle = FALSE)
-
-rownames(ptbl)[2:4] <- str_to_title(rownames(ptbl)[2:4])
-rownames(ptbl)[5:10] <- str_c("-", rownames(ptbl)[5:10])
-rownames(ptbl)[11] <- "Length of Stay"
-
+d <- filter(demograph, Year == "historical")
+tbl <- CreateTableOne(vars, "Group", d, fvars)
+ptbl <- print(tbl, nonnormal = c("Age", "Length of Stay"), printToggle = FALSE, cramVars = "Therapy")
+rownames(ptbl)[6:11] <- str_c("-", rownames(ptbl)[6:11])
 knitr::kable(ptbl[, 1:3], caption = "Demographics")
 ```
 
 Dosing Service Utilization by Medical Service (vs. Historical)
 ========================================================
 ```{r ds_med_service}
-
 ggplot(data = tmp, aes(x = service, y = count, fill = consult)) +
     geom_bar(stat = "identity") +
     facet_grid(historical ~ .) +
