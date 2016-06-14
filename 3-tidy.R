@@ -126,6 +126,28 @@ data.hgb.drop <- group_by(tmp.hgb.drop, pie.id) %>%
     summarize(lab.datetime = first(lab.datetime),
               change = first(change))
 
+# body mass index --------------------------------------
+
+raw.measures <- read_edw_data(dir.data, "measures") %>%
+    semi_join(pts.include, by = "pie.id")
+
+tmp.height <- raw.measures %>%
+    filter(measure == "Height",
+           measure.units == "cm") %>%
+    group_by(pie.id) %>%
+    arrange(measure.datetime) %>%
+    summarize(height = last(measure.result))
+
+tmp.weight <- raw.measures %>%
+    filter(measure == "Weight",
+           measure.units == "kg") %>%
+    group_by(pie.id) %>%
+    arrange(measure.datetime) %>%
+    summarize(weight = last(measure.result))
+
+data.measures <- full_join(tmp.height, tmp.weight, by = "pie.id") %>%
+    mutate(bmi = weight / (height / 100)^2)
+
 # save data --------------------------------------------
 
 save_rds(dir.tidy, "data")
