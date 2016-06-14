@@ -7,8 +7,6 @@ output:
     html_notebook:
       code_folding: hide
       fig_caption: yes
-      fig_height: 6
-      fig_width: 6
       toc: yes
       toc_float: yes
 ---
@@ -27,6 +25,7 @@ library(tableone)
 ```{r data}
 tmp <- get_rds("tidy")
 tmp <- get_rds("analysis")
+pts.include <- inner_join(pts.include, data.new, by = "pie.id")
 ```
 
 ## Warfarin Utilization
@@ -63,7 +62,9 @@ g <- ggplot(d, aes(x = service, y = count)) +
 print(g)
 ```
 
-```{r ds_by_service, fig.cap="Warfarin Dosing Service Utilization Among Top 10 Medical Services Ordering Warfarin", fig.height=6, fig.width=6}
+#### All Time
+
+```{r ds_by_service, fig.cap="Warfarin Dosing Service Utilization Among Top 10 Medical Services Ordering Warfarin"}
 d <- tmp <- analyze.services.all %>%
     mutate(service = ordered(service, levels = names(sort(table(service), decreasing = TRUE)))) %>%
     group_by(service, consult, historical) %>%
@@ -80,7 +81,6 @@ d <- gather(d, consult, count, -service, -historical)
 
 g <- ggplot(d, aes(x = service, y = count, fill = consult)) +
     geom_bar(stat = "identity") +
-    facet_grid(historical ~ .) +
     ggtitle("Warfarin Dosing Service Utilization Among\nTop 10 Medical Services Ordering Warfarin") +
     xlab("Medical Service") +
     ylab("Number of Patients") +
@@ -88,6 +88,12 @@ g <- ggplot(d, aes(x = service, y = count, fill = consult)) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 print(g)
+```
+
+#### Current vs. Historical
+
+```{r}
+print(g + facet_grid(historical ~ .))
 ```
 
 ```{r hospital_units, fig.cap="Top 10 Hospital Units for Warfarin Initiation", fig.height=6, fig.width=6}
@@ -169,7 +175,6 @@ knitr::kable(groups, caption = "Number of patients per group")
 ```{r demographics, results='asis'}
 demograph <- pts.include %>% 
     inner_join(data.demographics, by = "pie.id") %>%
-    inner_join(data.new, by = "pie.id") %>%
     mutate(sex = factor(sex, levels = c("Female", "Male")),
            race = str_replace_all(race, "Oriental", "Asian"),
            race = factor(race, exclude = c("", "Unknown")))
@@ -192,6 +197,7 @@ knitr::kable(ptbl, caption = "Demographics for Historical Years")
 
 ### Indications
 
+#### All Patients
 ```{r indications, fig.cap="Indications for warfarin use", fig.height=6, fig.width=6}
 d <- pts.include %>%
     inner_join(data.warfarin.indications, by = "pie.id") %>%
@@ -213,6 +219,7 @@ g <- ggplot(d, aes(x = indication, fill = group)) +
 
 print(g)
 ```
+
 
 ### Dispositions
 
@@ -244,13 +251,15 @@ print(g)
 ## Exploratory Plots
 
 ### Change in INR
-```{r inr, fig.cap="Change in INR after starting warfarin", fig.height=6, fig.width=6}
+
+#### All Patients
+
+```{r inr, fig.cap="Change in INR after starting warfarin"}
 d <- pts.include %>%
     inner_join(data.labs.inrs, by = "pie.id") %>%
     calc_lab_runtime(units = "days")
 
 g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
-    facet_grid(year ~ .) +
     geom_point(alpha = 0.3, size = 0.5) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "green") +
     geom_smooth(aes(color = group)) + 
@@ -264,42 +273,62 @@ g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
 print(g)
 ```
 
+#### Groups
+
+```{r}
+print(g + facet_grid(year ~ therapy))
+```
+
 ### Time in Therapuetic Range
-```{r inrange, fig.cap="Percent of time INR is within therapeutic range", fig.height=6, fig.width=6}
+
+#### All Patients
+```{r inrange, fig.cap="Percent of time INR is within therapeutic range"}
 d <- inner_join(pts.include, data.inr.inrange, by = "pie.id") 
 
 g <- ggplot(d, aes(x = group, y = perc.time)) +
     geom_boxplot() +
-    facet_grid(year ~ .) +
     ggtitle("Percent of time INR is within therapeutic range") +
     ylab("Time in Therapeutic Range (%)")
 
 print(g)
 ```
 
+#### Groups
+
+```{r}
+print(g + facet_grid(year ~ therapy))
+```
+
+
 ### Critical INR Values
 
-```{r critical_inr, fig.cap="Percent of time INR is critical (above 4)", fig.height=6, fig.width=6}
+#### All Patients
+```{r critical_inr, fig.cap="Percent of time INR is critical (above 4)"}
 d <- inner_join(pts.include, data.inr.supratx, by = "pie.id") 
 
 g <- ggplot(d, aes(x = group, y = perc.time)) +
     geom_boxplot() +
-    facet_grid(year ~ .) +
     ggtitle("Percent of time INR is critical (above 4)") +
     ylab("Time Supratherapeutic (%)")
 
 print(g)
 ```
 
+#### Groups
+
+```{r}
+print(g + facet_grid(year ~ therapy))
+```
+
 ### Change in Hgb
 
-```{r hgb, fig.cap="Change in hemoglobin after starting warfarin", fig.height=6, fig.width=6}
+#### All Patients
+```{r hgb, fig.cap="Change in hemoglobin after starting warfarin"}
 d <- pts.include %>%
     inner_join(data.labs.hgb, by = "pie.id") %>%
     calc_lab_runtime(units = "days") 
 
 g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
-    facet_grid(year ~ .) +
     geom_point(alpha = 0.3, size = 0.5) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "dark blue") +
     geom_smooth(aes(color = group)) + 
@@ -311,4 +340,9 @@ g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
     coord_cartesian(xlim = c(-2, 10), ylim = c(5, 15))
 
 print(g)
+```
+
+#### Groups
+```{r hgb2, fig.cap="Change in hemoglobin after starting warfarin"}
+print(g + facet_grid(year ~ therapy))
 ```
