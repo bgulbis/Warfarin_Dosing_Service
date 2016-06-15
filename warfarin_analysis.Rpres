@@ -199,14 +199,38 @@ ggplot(data = counts, aes(x = disposition, fill = group)) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-INR Response
+Inpatient Dosing Days
 ========================================================
-```{r inr}
+```{r dosing_days}
 d <- pts.include %>%
     inner_join(data.labs.inrs, by = "pie.id") %>%
     calc_lab_runtime(units = "days") %>%
     filter(year == "current")
 
+df <- d %>%
+    group_by(pie.id, group) %>%
+    summarize(num.days = first(warf.days))
+
+g <- ggplot(df, aes(x = group, y = num.days)) +
+    geom_boxplot() +
+    ggtitle("Inpatient Dosing Days") +
+    ylab("Days")
+
+print(g)
+```
+
+Inpatient Dosing Days - Closer Look
+========================================================
+```{r dosing_days2}
+p <- kruskal.test(x = df$num.days, g = as.factor(df$group))
+lab <- str_c("p-value = ", round(p$p.value, 3))
+
+print(g + annotate("text", x = 1.5, y = 12.5, label = lab) + coord_cartesian(ylim = c(0, 20)))
+```
+
+INR Response
+========================================================
+```{r inr}
 g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
     geom_point(alpha = 0.3, size = 0.5) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "dark blue") +
@@ -227,8 +251,7 @@ Change in INR
 df <- d %>%
     group_by(pie.id, group, year) %>%
     summarize(first.inr = first(lab.result),
-              last.inr = last(lab.result),
-              num.days = first(warf.days)) %>%
+              last.inr = last(lab.result)) %>%
     mutate(change.inr = last.inr - first.inr)
 
 p <- kruskal.test(x = df$change.inr, g = as.factor(df$group))

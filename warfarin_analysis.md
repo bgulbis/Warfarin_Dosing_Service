@@ -79,6 +79,14 @@ Disposition
 ========================================================
 ![plot of chunk disposition](warfarin_analysis-figure/disposition-1.png)
 
+Inpatient Dosing Days
+========================================================
+![plot of chunk dosing_days](warfarin_analysis-figure/dosing_days-1.png)
+
+Inpatient Dosing Days - Closer Look
+========================================================
+![plot of chunk dosing_days2](warfarin_analysis-figure/dosing_days2-1.png)
+
 INR Response
 ========================================================
 ![plot of chunk inr](warfarin_analysis-figure/inr-1.png)
