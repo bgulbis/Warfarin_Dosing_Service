@@ -3,12 +3,12 @@ title: "Warfarin Dosing Service Analysis"
 subtitle: "Exploratory Analysis"
 author: "Brian Gulbis"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
-output: 
-    html_notebook:
-      code_folding: hide
-      fig_caption: yes
-      toc: yes
-      toc_float: yes
+output:
+  html_notebook:
+    code_folding: hide
+    fig_caption: yes
+    toc: yes
+    toc_float: yes
 ---
 
 ```{r library, message=FALSE}
@@ -257,7 +257,7 @@ print(g)
 
 ## Exploratory Plots
 
-### Change in INR
+### INR Response
 
 #### All Patients
 
@@ -266,10 +266,10 @@ d <- pts.include %>%
     inner_join(data.labs.inrs, by = "pie.id") %>%
     calc_lab_runtime(units = "days")
 
-g <- ggplot(d, aes(x = run.time, y = lab.result, color = group)) +
+g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
     geom_point(alpha = 0.3, size = 0.5) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "dark blue") +
-    geom_smooth() + 
+    geom_smooth(aes(color = group)) + 
     ggtitle("Change in INR after starting warfarin") +
     xlab("Day") +
     ylab("INR") +
@@ -283,12 +283,18 @@ print(g)
 #### Groups
 
 ```{r}
-print(g + facet_grid(year ~ therapy))
+print(g + facet_grid(. ~ therapy))
 ```
 
 ```{r}
+print(g + facet_grid(. ~ year))
+```
+
+### Change in INR
+
+```{r}
 df <- d %>%
-    filter(year == "current") %>%
+    # filter(year == "current") %>%
     group_by(pie.id, group, year) %>%
     summarize(first.inr = first(lab.result),
               last.inr = last(lab.result),
@@ -307,6 +313,60 @@ print(g)
 kruskal.test(x = df$change.inr, g = as.factor(df$group))
 ```
 
+```{r}
+print(g + facet_grid(. ~ year))
+```
+
+#### Current Year Between Groups
+```{r}
+kruskal.test(x = df$change.inr[df$year == "current"], g = as.factor(df$group[df$year == "current"]))
+```
+
+#### Pharmacy Current vs. Historical
+```{r}
+kruskal.test(x = df$change.inr[df$group == "pharmacy"], g = as.factor(df$year[df$group == "pharmacy"]))
+```
+
+#### New Patients
+```{r}
+df2 <- d %>%
+    filter(therapy == "New") %>%
+    group_by(pie.id, group, year) %>%
+    summarize(first.inr = first(lab.result),
+              last.inr = last(lab.result),
+              num.days = first(warf.days)) %>%
+    mutate(change.inr = last.inr - first.inr)
+
+g <- ggplot(df2, aes(x = group, y = change.inr)) +
+    geom_boxplot() +
+    ggtitle("Change in INR") +
+    ylab("INR")
+
+print(g)
+```
+
+```{r}
+kruskal.test(x = df2$change.inr[df2$year == "current"], g = as.factor(df2$group[df2$year == "current"]))
+```
+
+### Inpatient Dosing Days
+
+```{r}
+df3 <- filter(df, year == "current")
+
+g <- ggplot(df3, aes(x = group, y = num.days)) +
+    geom_boxplot() +
+    # geom_jitter(aes(color = group), alpha = 0.5) +
+    ggtitle("Inpatient Dosing Days") +
+    ylab("Days") +
+    coord_cartesian(ylim = c(0, 20))
+
+print(g)
+```
+
+```{r}
+kruskal.test(x = df3$num.days, g = as.factor(df3$group))
+```
 
 ### Time in Therapuetic Range
 
@@ -328,6 +388,10 @@ print(g)
 print(g + facet_grid(year ~ therapy))
 ```
 
+### Current Between Groups
+```{r}
+kruskal.test(x = d$perc.time[d$year == "current"], g = as.factor(d$group[d$year == "current"]))
+```
 
 ### Critical INR Values
 
@@ -366,12 +430,47 @@ g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
     ylab("Hgb (g/dL)") +
     scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
     scale_color_brewer(palette = "Set1") +
-    coord_cartesian(xlim = c(-2, 10), ylim = c(5, 15))
+    coord_cartesian(xlim = c(-2, 10), ylim = c(7, 12))
 
 print(g)
 ```
 
 #### Groups
 ```{r hgb2, fig.cap="Change in hemoglobin after starting warfarin"}
-print(g + facet_grid(year ~ therapy))
+print(g + facet_grid(. ~ year))
 ```
+
+```{r}
+print(g + facet_grid(. ~ therapy))
+```
+
+
+
+```{r}
+df <- d %>%
+    filter(year == "current") %>%
+    group_by(pie.id, group) %>%
+    summarize(first.inr = first(lab.result),
+              last.inr = last(lab.result)) %>%
+    mutate(change.inr = last.inr - first.inr)
+
+p <- kruskal.test(x = df$change.inr, g = as.factor(df$group))
+lab <- str_c("p-value = ", round(p$p.value, 3))
+
+g <- ggplot(df, aes(x = group, y = change.inr)) +
+    geom_boxplot() +
+    annotate("text", x = 1.5, y = 2.5, label = lab) +
+    ggtitle("Change in Hemoglobin") +
+    ylab("Hemoglobin Difference (g/dL)")
+
+print(g)
+```
+
+```{r}
+t.test(x = df$change.inr, g = as.factor(df$group))
+```
+
+```{r}
+summary(df)
+```
+
