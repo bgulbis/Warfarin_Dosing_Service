@@ -35,7 +35,7 @@ d <- analyze.patients.all %>%
     filter(year.cal >= 2013) 
 
 g <- ggplot(d, aes(x = year.cal)) +
-    geom_bar() +
+    geom_bar(fill = "#1F78B4") +
     ggtitle("Number of Patients Receiving Warfarin") +
     xlab("Year") +
     ylab("Number of Patients") +
@@ -53,7 +53,7 @@ d <- analyze.services.all %>%
     top_n(10, count)
 
 g <- ggplot(d, aes(x = service, y = count)) +
-    geom_bar(stat = "identity") +
+    geom_bar(stat = "identity", fill = "#1F78B4") +
     ggtitle("Top 10 Medical Services Utilizing Warfarin") +
     xlab("Medical Service") +
     ylab("Number of Patients") +
@@ -105,7 +105,7 @@ d <- analyze.locations.all %>%
     top_n(10, count)
 
 g <- ggplot(d, aes(x = location, y = count)) +
-    geom_bar(stat = "identity") +
+    geom_bar(stat = "identity", fill = "#1F78B4") +
     ggtitle("Top 10 Hospital Units for Warfarin Initiation") +
     xlab("Hospital Unit") +
     ylab("Number of Patients") +

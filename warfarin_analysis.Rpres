@@ -31,7 +31,7 @@ pts.include <- inner_join(pts.include, data.new, by = "pie.id")
 graph <- analyze.patients.all %>%
     filter(year.cal >= 2013) %>%
     ggplot(aes(x = year.cal)) +
-    geom_bar() +
+    geom_bar(fill = "#1F78B4") +
     ggtitle("Number of Patients Receiving Warfarin at MH-TMC, 2013-2015") +
     xlab("Year") +
     ylab("Number of Patients") +
