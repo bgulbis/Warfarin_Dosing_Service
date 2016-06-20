@@ -22,7 +22,7 @@ Orders by Pharmacy Dosing Service
 ========================================================
 ![plot of chunk dose_service_use2](warfarin_analysis-figure/dose_service_use2-1.png)
 
-Dosing Service Utilization by Medical Service
+Utilization by Medical Services
 ========================================================
 ![plot of chunk ds_med_service_curr](warfarin_analysis-figure/ds_med_service_curr-1.png)
 
@@ -114,53 +114,55 @@ Change in Hemoglobin
 Historical Comparison
 ========================================================
 
-* January 1, 2013 to December 31, 2014
+* Pharmacy Dosing Service 2015 vs. 2013-2014
 * Same inclusion and exclusion criteria
 
 Historical Demographics
 ========================================================
 
-|                              |pharmacy             |traditional          |p      |
-|:-----------------------------|:--------------------|:--------------------|:------|
-|n                             |866                  |894                  |       |
-|Age (median [IQR])            |59.00 [46.00, 71.00] |62.00 [51.00, 73.00] |<0.001 |
-|Sex = Male (%)                |505 (58.3)           |526 (58.9)           |0.840  |
-|BMI (mean (sd))               |29.90 (9.26)         |31.69 (38.09)        |0.177  |
-|Race (%)                      |                     |                     |0.434  |
-|-   African American          |245 (31.2)           |228 (28.1)           |       |
-|-   Asian                     |15 ( 1.9)            |13 ( 1.6)            |       |
-|-   Latin American            |1 ( 0.1)             |0 ( 0.0)             |       |
-|-   Native Am.                |0 ( 0.0)             |1 ( 0.1)             |       |
-|-   Other                     |133 (16.9)           |131 (16.2)           |       |
-|-   White/Caucasian           |392 (49.9)           |437 (54.0)           |       |
-|Length of Stay (median [IQR]) |11.85 [7.38, 18.62]  |10.94 [6.89, 17.28]  |0.024  |
-|Therapy = New/Previous (%)    |604/262 (69.7/30.3)  |553/341 (61.9/38.1)  |0.001  |
+|                               |current              |historical           |p     |
+|:------------------------------|:--------------------|:--------------------|:-----|
+|n                              |402                  |866                  |      |
+|Age (median [IQR])             |58.00 [42.25, 68.75] |59.00 [46.00, 71.00] |0.048 |
+|Sex = Male (%)                 |240 (59.7)           |505 (58.3)           |0.685 |
+|BMI (mean (sd))                |29.95 (8.50)         |29.90 (9.26)         |0.926 |
+|Race (%)                       |                     |                     |0.189 |
+|-   African American           |104 (28.4)           |245 (31.2)           |      |
+|-   Asian                      |12 ( 3.3)            |15 ( 1.9)            |      |
+|-   Latin American             |0 ( 0.0)             |1 ( 0.1)             |      |
+|-   Other                      |78 (21.3)            |133 (16.9)           |      |
+|-   White/Caucasian            |172 (47.0)           |392 (49.9)           |      |
+|-Length of Stay (median [IQR]) |12.10 [7.71, 19.83]  |11.85 [7.38, 18.62]  |0.172 |
+|Therapy = New/Previous (%)     |270/132 (67.2/32.8)  |604/262 (69.7/30.3)  |0.390 |
 
-Dosing Service Utilization by Medical Service (vs. Historical)
+Utilization by Medical Services
 ========================================================
 ![plot of chunk ds_med_service](warfarin_analysis-figure/ds_med_service-1.png)
 
-Anticoagulation Indications (vs. Historical)
+Anticoagulation Indications
 ========================================================
 ![plot of chunk indications_hist](warfarin_analysis-figure/indications_hist-1.png)
 
-Disposition (vs. Historical)
+Disposition
 ========================================================
 ![plot of chunk disposition_hist](warfarin_analysis-figure/disposition_hist-1.png)
 
-Changes in INR (vs. Historical)
+INR Response
 ========================================================
 ![plot of chunk inr_hist](warfarin_analysis-figure/inr_hist-1.png)
 
-Time in Therapeutic Range (vs. Historical)
+Time in Therapeutic Range
 ========================================================
 ![plot of chunk ttr_hist](warfarin_analysis-figure/ttr_hist-1.png)
 
-Time Critical INR (vs. Historical)
+Time Critical INR
 ========================================================
 ![plot of chunk critical_hist](warfarin_analysis-figure/critical_hist-1.png)
 
-Changes in Hemoglobin (vs. Historical)
+Hemoglobin Response
 ========================================================
 ![plot of chunk hgb_hist](warfarin_analysis-figure/hgb_hist-1.png)
 
+Change in Hemoglobin
+========================================================
+![plot of chunk hgb2_hist](warfarin_analysis-figure/hgb2_hist-1.png)
