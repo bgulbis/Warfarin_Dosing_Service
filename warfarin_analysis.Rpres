@@ -441,6 +441,29 @@ ggplot(data = counts, aes(x = disposition, fill = year)) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
+Inpatient Dosing Days
+========================================================
+```{r dosing_days_hist}
+d <- pts.include %>%
+    inner_join(data.labs.inrs, by = "pie.id") %>%
+    calc_lab_runtime(units = "days") %>%
+    filter(group == "pharmacy")
+
+df <- d %>%
+    group_by(pie.id, year) %>%
+    summarize(num.days = first(warf.days))
+
+p <- kruskal.test(x = df$num.days, g = as.factor(df$year))
+
+g <- ggplot(df, aes(x = year, y = num.days)) +
+    geom_boxplot() +
+    ggtitle("Inpatient Dosing Days") +
+    xlab("Group") +
+    ylab("Days")
+
+print(g)
+```
+
 INR Response
 ========================================================
 ```{r inr_hist}
@@ -460,6 +483,28 @@ g <- ggplot(d, aes(x = run.time, y = lab.result, group = year)) +
     scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
     scale_color_brewer(palette = "Set1", labels = c("Current", "Historical"), guide = guide_legend(title = NULL)) +
     coord_cartesian(xlim = c(-2, 10), ylim = c(1, 3.5))
+
+print(g)
+```
+
+Change in INR
+========================================================
+```{r inr2_hist}
+df <- d %>%
+    group_by(pie.id, year) %>%
+    summarize(first.inr = first(lab.result),
+              last.inr = last(lab.result)) %>%
+    mutate(change.inr = last.inr - first.inr)
+
+p <- kruskal.test(x = df$change.inr, g = as.factor(df$year))
+lab <- str_c("p-value = ", round(p$p.value, 3))
+
+g <- ggplot(df, aes(x = year, y = change.inr)) +
+    geom_boxplot() +
+    # annotate("text", x = 1.5, y = 3, label = lab) +
+    ggtitle("Change in INR") +
+    xlab("Group") +
+    ylab("INR Difference")
 
 print(g)
 ```
