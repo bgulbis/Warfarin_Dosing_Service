@@ -147,9 +147,17 @@ Disposition
 ========================================================
 ![plot of chunk disposition_hist](warfarin_analysis-figure/disposition_hist-1.png)
 
+Inpatient Dosing Days
+========================================================
+![plot of chunk dosing_days_hist](warfarin_analysis-figure/dosing_days_hist-1.png)
+
 INR Response
 ========================================================
 ![plot of chunk inr_hist](warfarin_analysis-figure/inr_hist-1.png)
+
+Change in INR
+========================================================
+![plot of chunk inr2_hist](warfarin_analysis-figure/inr2_hist-1.png)
 
 Time in Therapeutic Range
 ========================================================
