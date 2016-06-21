@@ -126,6 +126,50 @@ data.hgb.drop <- group_by(tmp.hgb.drop, pie.id) %>%
     summarize(lab.datetime = first(lab.datetime),
               change = first(change))
 
+# bleeding ---------------------------------------------
+
+library(icd)
+library(readr)
+
+# find patients with ICD codes for bleeding
+raw.diag <- edwr::read_edw_data(dir.data, "diagnosis") %>%
+    semi_join(pts.include, by = "pie.id")
+
+# fix codes which are categorized incorrectly
+# tmp.diag <- filter(raw.diag, code.source == "ICD-10-CM") %>%
+#     icd10_filter_invalid(icd_name = "diag.code") %>%
+#     mutate(code.source == "ICD-9-CM")
+
+
+tmp.icd9 <- filter(raw.diag, code.source == "ICD-9-CM") %>%
+    icd9_filter_valid(icd_name = "diag.code")
+
+tmp.icd10 <- filter(raw.diag, code.source == "ICD-10-CM") %>%
+    icd10_filter_valid(icd_name = "diag.code")
+
+bleed.major <- read_csv("icd_bleed_major.csv", col_types = "ccc")
+bleed.minor <- read_csv("icd_bleed_minor.csv", col_types = "ccc")
+
+tmp.bleed.icd9 <- list(major9 = bleed.major$icd9,
+                 minor9 = bleed.minor$icd9)
+
+tmp.bleed9 <- icd9_comorbid(tmp.icd9, tmp.bleed.icd9, visit_name = "pie.id",
+                            icd_name = "diag.code") %>%
+    icd_comorbid_mat_to_df("pie.id", stringsAsFactors = FALSE)
+
+tmp.bleed.icd10 <- list(major10 = bleed.major$icd10,
+                  minor10 = bleed.minor$icd10)
+
+tmp.bleed10 <- icd10_comorbid(tmp.icd10, tmp.bleed.icd10, visit_name = "pie.id",
+                              icd_name = "diag.code") %>%
+    icd_comorbid_mat_to_df("pie.id", stringsAsFactors = FALSE)
+
+data.bleed <- full_join(tmp.bleed9, tmp.bleed10, by = "pie.id") %>%
+    group_by(pie.id) %>%
+    mutate(major = ifelse(sum(major9, major10, na.rm = TRUE) >= 1, TRUE, FALSE),
+           minor = ifelse(sum(minor9, minor10, na.rm = TRUE) >= 1, TRUE, FALSE)) %>%
+    select(pie.id, major, minor)
+
 # body mass index --------------------------------------
 
 raw.measures <- read_edw_data(dir.data, "measures") %>%
