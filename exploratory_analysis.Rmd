@@ -519,3 +519,8 @@ summary(df)
 
 ### Bleeding and/or Hemoglobin Drop
 
+```{r}
+
+    
+```
+
