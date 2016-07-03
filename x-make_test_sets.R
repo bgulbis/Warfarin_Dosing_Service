@@ -35,8 +35,9 @@ test <- labs %>%
     mutate(
         `PowerInsight Encounter Id` = as.character(
             as.numeric(`PowerInsight Encounter Id`) + rnum),
-        `Clinical Event End Date/Time` = as.character(
-            ymd_hms(`Clinical Event End Date/Time`) + days(rdays))
+        `Clinical Event End Date/Time` = format(
+            ymd_hms(`Clinical Event End Date/Time`) + days(rdays),
+            format = "%Y/%m/%d %H:%M:%S")
     )
 
 dir <- "../edwr/data-raw/"
