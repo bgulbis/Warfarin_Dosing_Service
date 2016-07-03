@@ -1,25 +1,44 @@
 
+library(dplyr)
+library(stringr)
+library(lubridate)
+library(readr)
+library(edwr)
+
 rnum <- sample.int(100000, 1)
+rdays <- sample.int(15, 1)
 
-test <- read_data("data", "demographics") %>%
-    sample_n(10) %>%
-    mutate(`PowerInsight Encounter Id` = as.character(as.numeric(`PowerInsight Encounter Id`) + rnum),
-           `Person ID` = as.character(as.numeric(`Person ID`) + rnum),
-           `Person Location- Facility (Curr)` = "Hospital")
+labs <- read_data("data", "labs_coag", "skip")
 
-readr::write_csv(test, "test_demographics.csv")
-
-test.censor <- read_data("data", "labs_coag") %>%
+test.censor <- labs %>%
     filter(str_detect(`Clinical Event Result`, ">|<")) %>%
-    sample_n(5) %>%
-    mutate(`PowerInsight Encounter Id` = as.character(as.numeric(`PowerInsight Encounter Id`) + rnum))
+    sample_n(5)
 
-test <- read_data("data", "labs_coag") %>%
-    sample_n(10) %>%
-    mutate(`PowerInsight Encounter Id` = as.character(as.numeric(`PowerInsight Encounter Id`) + rnum))
+test <- labs %>%
+    sample_n(10)
 
-test <- bind_rows(test, test.censor)
+pts.sample <- bind_rows(test, test.censor) %>%
+    distinct(`PowerInsight Encounter Id`)
 
-readr::write_csv(test, "test_labs.csv")
+test <- read_data("data", "demographics", "skip") %>%
+    filter(`PowerInsight Encounter Id` %in% pts.sample$`PowerInsight Encounter Id`) %>%
+    mutate(
+        `PowerInsight Encounter Id` = as.character(
+            as.numeric(`PowerInsight Encounter Id`) + rnum),
+        `Person ID` = as.character(as.numeric(`Person ID`) + rnum),
+        `Person Location- Facility (Curr)` = "Hospital"
+    )
 
-# tmp <- read_edw_data("./", "test_labs.csv", "labs")
+
+test <- labs %>%
+    filter(`PowerInsight Encounter Id` %in% pts.sample$`PowerInsight Encounter Id`) %>%
+    mutate(
+        `PowerInsight Encounter Id` = as.character(
+            as.numeric(`PowerInsight Encounter Id`) + rnum),
+        `Clinical Event End Date/Time` = as.character(
+            ymd_hms(`Clinical Event End Date/Time`) + days(rdays))
+    )
+
+dir <- "../edwr/data-raw/"
+write_csv(test, "../edwr/inst/extdata/test_demographics.csv")
+write_csv(test, paste0(dir, "test_labs.csv"))
