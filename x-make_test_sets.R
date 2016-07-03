@@ -20,7 +20,7 @@ test <- labs %>%
 pts.sample <- bind_rows(test, test.censor) %>%
     distinct(`PowerInsight Encounter Id`)
 
-test <- read_data("data", "demographics", "skip") %>%
+test.labs <- read_data("data", "demographics", "skip") %>%
     filter(`PowerInsight Encounter Id` %in% pts.sample$`PowerInsight Encounter Id`) %>%
     mutate(
         `PowerInsight Encounter Id` = as.character(
@@ -30,7 +30,7 @@ test <- read_data("data", "demographics", "skip") %>%
     )
 
 
-test <- labs %>%
+test.d <- labs %>%
     filter(`PowerInsight Encounter Id` %in% pts.sample$`PowerInsight Encounter Id`) %>%
     mutate(
         `PowerInsight Encounter Id` = as.character(
@@ -41,5 +41,5 @@ test <- labs %>%
     )
 
 dir <- "../edwr/data-raw/"
-write_csv(test, "../edwr/inst/extdata/test_demographics.csv")
-write_csv(test, paste0(dir, "test_labs.csv"))
+write_csv(test.d, "../edwr/inst/extdata/test_demographics.csv")
+write_csv(test.labs, paste0(dir, "test_labs.csv"))
