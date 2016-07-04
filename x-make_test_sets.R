@@ -37,39 +37,51 @@ test.d <- read_data(dir.sample, "demographics", "skip") %>%
         `Person Location- Facility (Curr)` = "Hospital"
     )
 
-test.labs <- read_data(dir.sample, "labs") %>%
+x <- read_data(dir.sample, "labs")
+test.labs <- x %>%
     filter(lab %in% c("hgb", "platelet", "wbc", "inr", "ptt")) %>%
     mutate(pie.id = as.character(as.numeric(pie.id) + rnum),
            lab.datetime = lab.datetime + days(rdays))
+class(test.labs) <- class(x)
 
-test.diag <- read_data(dir.sample, "diagnosis") %>%
+x <- read_data(dir.sample, "diagnosis")
+test.diag <- x %>%
     mutate(pie.id = as.character(as.numeric(pie.id) + rnum))
+class(test.diag) <- class(x)
 
-test.meds.home <- read_data(dir.sample, "meds_home") %>%
+x <- read_data(dir.sample, "meds_home")
+test.meds.home <- x %>%
     mutate(pie.id = as.character(as.numeric(pie.id) + rnum))
+class(test.meds.home) <- class(x)
 
 med.sample <- read_data(dir.sample, "meds_cont") %>%
+    filter(med == "heparin") %>%
     distinct(pie.id) %>%
     sample_n(3)
 
-test.meds.cont <- read_data(dir.sample, "meds_cont") %>%
+x <- read_data(dir.sample, "meds_cont")
+test.meds.cont <- x %>%
     filter(pie.id %in% med.sample$pie.id) %>%
     mutate(pie.id = as.character(as.numeric(pie.id) + rnum),
            order.id = as.character(as.numeric(order.id) + rnum),
            event.id = as.character(as.numeric(event.id) + rnum),
            med.datetime = med.datetime + days(rdays))
+class(test.meds.cont) <- class(x)
 
-test.meds.sched <- read_data(dir.sample, "meds_sched") %>%
+x <- read_data(dir.sample, "meds_sched")
+test.meds.sched <- x %>%
     filter(pie.id %in% med.sample$pie.id) %>%
     mutate(pie.id = as.character(as.numeric(pie.id) + rnum),
            order.id = as.character(as.numeric(order.id) + rnum),
            event.id = as.character(as.numeric(event.id) + rnum),
            med.datetime = med.datetime + days(rdays))
+class(test.meds.sched) <- class(x)
 
-test.warf <- read_data(dir.sample, "warfarin") %>%
+x <- read_data(dir.sample, "warfarin")
+test.warf <- x %>%
     mutate(pie.id = as.character(as.numeric(pie.id) + rnum),
            warfarin.datetime = warfarin.datetime + days(rdays))
-
+class(test.warf) <- class(x)
 
 dir <- "../edwr/data-raw/"
 write_csv(test.d, "../edwr/inst/extdata/test_demographics.csv")
