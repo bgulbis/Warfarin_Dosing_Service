@@ -66,11 +66,11 @@ test.warf <- read_data(dir.sample, "warfarin") %>%
 
 dir <- "../edwr/data-raw/"
 write_csv(test.d, "../edwr/inst/extdata/test_demographics.csv")
-write_csv(test.labs, paste0(dir, "test_labs.csv"))
-write_csv(test.diag, paste0(dir, "test_diag.csv"))
-write_csv(test.meds.home, paste0(dir, "test_meds_home.csv"))
-write_csv(test.meds.cont, paste0(dir, "test_meds_cont.csv"))
-write_csv(test.meds.sched, paste0(dir, "test_meds_sched.csv"))
-write_csv(test.warf, paste0(dir, "test_warf.csv"))
+saveRDS(test.labs, paste0(dir, "test_labs.Rds"))
+saveRDS(test.diag, paste0(dir, "test_diag.Rds"))
+saveRDS(test.meds.home, paste0(dir, "test_meds_home.Rds"))
+saveRDS(test.meds.cont, paste0(dir, "test_meds_cont.Rds"))
+saveRDS(test.meds.sched, paste0(dir, "test_meds_sched.Rds"))
+saveRDS(test.warf, paste0(dir, "test_warf.Rds"))
 
 # BGTools::concat_encounters(pts.sample$`PowerInsight Encounter Id`)
