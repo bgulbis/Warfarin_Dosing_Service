@@ -50,7 +50,7 @@ test.meds.home <- read_data(dir.sample, "meds_home") %>%
 
 med.sample <- read_data(dir.sample, "meds_cont") %>%
     distinct(pie.id) %>%
-    sample_n(4)
+    sample_n(3)
 
 test.meds.cont <- read_data(dir.sample, "meds_cont") %>%
     filter(pie.id %in% med.sample$pie.id) %>%
