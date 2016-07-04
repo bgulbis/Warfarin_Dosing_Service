@@ -38,6 +38,7 @@ test.d <- read_data(dir.sample, "demographics", "skip") %>%
     )
 
 test.labs <- read_data(dir.sample, "labs") %>%
+    filter(lab %in% c("hgb", "platelet", "wbc", "inr", "ptt")) %>%
     mutate(pie.id = as.character(as.numeric(pie.id) + rnum),
            lab.datetime = lab.datetime + days(rdays))
 
@@ -47,13 +48,19 @@ test.diag <- read_data(dir.sample, "diagnosis") %>%
 test.meds.home <- read_data(dir.sample, "meds_home") %>%
     mutate(pie.id = as.character(as.numeric(pie.id) + rnum))
 
+med.sample <- read_data(dir.sample, "meds_cont") %>%
+    distinct(pie.id) %>%
+    sample_n(4)
+
 test.meds.cont <- read_data(dir.sample, "meds_cont") %>%
+    filter(pie.id %in% med.sample$pie.id) %>%
     mutate(pie.id = as.character(as.numeric(pie.id) + rnum),
            order.id = as.character(as.numeric(order.id) + rnum),
            event.id = as.character(as.numeric(event.id) + rnum),
            med.datetime = med.datetime + days(rdays))
 
 test.meds.sched <- read_data(dir.sample, "meds_sched") %>%
+    filter(pie.id %in% med.sample$pie.id) %>%
     mutate(pie.id = as.character(as.numeric(pie.id) + rnum),
            order.id = as.character(as.numeric(order.id) + rnum),
            event.id = as.character(as.numeric(event.id) + rnum),
