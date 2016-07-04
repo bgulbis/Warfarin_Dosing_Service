@@ -80,4 +80,5 @@ saveRDS(test.meds.cont, paste0(dir, "test_meds_cont.Rds"))
 saveRDS(test.meds.sched, paste0(dir, "test_meds_sched.Rds"))
 saveRDS(test.warf, paste0(dir, "test_warf.Rds"))
 
+rm(rnum, rdays)
 # BGTools::concat_encounters(pts.sample$`PowerInsight Encounter Id`)
