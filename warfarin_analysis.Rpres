@@ -52,7 +52,7 @@ d <- analyze.utilization %>%
 ggplot(d, aes(x = action.date, y = n, color = order)) +
     geom_line(size = 0.2, alpha = 0.7) +
     geom_smooth() +
-    ggtitle("Daily Warfarin Orders Managed by Pharmacy vs. Traditional") +
+    ggtitle("Daily Warfarin Orders Managed by Pharmacy and Traditional") +
     xlab("Date") +
     ylab("Number of Daily Orders") +
     scale_color_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL)) +

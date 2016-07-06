@@ -77,14 +77,15 @@ d <- tmp <- analyze.services.all %>%
 
 d$`FALSE`[d$`FALSE` < 0] <- 0
 
-d <- gather(d, consult, count, -service, -historical)
+d <- gather(d, consult, count, -service, -historical) %>%
+    mutate(group = ifelse(consult == TRUE, "pharmacy", "traditional"))
 
-g <- ggplot(d, aes(x = service, y = count, fill = consult)) +
+g <- ggplot(d, aes(x = service, y = count, fill = group)) +
     geom_bar(stat = "identity") +
     ggtitle("Warfarin Dosing Service Utilization Among\nTop 10 Medical Services Ordering Warfarin") +
     xlab("Medical Service") +
     ylab("Number of Patients") +
-    scale_fill_brewer(palette = "Set1") +
+    scale_fill_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL)) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 print(g)
@@ -118,6 +119,8 @@ print(g)
 
 ## Warfarin Dosing Service Utilization
 
+#### Number of Consults Relative to Total Number of Warfarin Orders
+
 ```{r service_utilization, fig.cap="Daily Warfarin Orders and Warfarin Consults", fig.height=6, fig.width=6}
 g <- ggplot(data = analyze.utilization, aes(x = action.date, y = n, color = order)) +
     geom_line(size = 0.2, alpha = 0.7) +
@@ -126,11 +129,30 @@ g <- ggplot(data = analyze.utilization, aes(x = action.date, y = n, color = orde
     ggtitle("Daily Warfarin Orders and Warfarin Consults") +
     xlab("Date") + 
     ylab("Number of Daily Orders") +
-    scale_color_brewer(palette = "Set1") +
+    scale_color_brewer(palette = "Set1", labels = c("Consult", "Warfarin"), guide = guide_legend(title = NULL)) +
     xlim(c(mdy_hm("1/1/2013 00:00"), mdy_hm("12/31/2015 23:59"))) 
     # coord_cartesian(xlim = c(mdy_hm("1/1/2013 00:00"), mdy_hm("12/31/2015 23:59"))) 
 
 print(g)
+```
+
+#### Daily Warfarin Orders Managed by Pharmacy and Traditional Dosing
+
+```{r dose_service_use, fig.height=6, fig.width=6}
+d <- analyze.utilization %>%
+    spread(order, n) %>%
+    mutate(warfarin = ifelse(is.na(consult), warfarin, warfarin - consult)) %>%
+    gather(order, n, -action.date) %>%
+    arrange(action.date)
+
+ggplot(d, aes(x = action.date, y = n, color = order)) +
+    geom_line(size = 0.2, alpha = 0.7) +
+    geom_smooth() +
+    ggtitle("Daily Warfarin Orders Managed by Pharmacy and Traditional") +
+    xlab("Date") +
+    ylab("Number of Daily Orders") +
+    scale_color_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL)) +
+    xlim(c(mdy_hm("1/1/2013 00:00"), mdy_hm("12/31/2015 23:59")))
 ```
 
 ```{r percent_orders, fig.cap="Percent of Daily Warfarin Orders Managed by Pharmacy Dosing Service", fig.height=6, fig.width=6}
@@ -444,6 +466,27 @@ print(g + facet_grid(. ~ year))
 print(g + facet_grid(. ~ therapy))
 ```
 
+#### Response Over First Few Days
+
+```{r hgb_zoom, fig.height=6, fig.width=6}
+d <- pts.include %>%
+    inner_join(data.labs.hgb, by = "pie.id") %>%
+    calc_lab_runtime(units = "days") %>%
+    filter(year == "current")
+
+g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
+    geom_point(alpha = 0.3, size = 0.5) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "dark blue") +
+    geom_smooth(aes(color = group)) +
+    ggtitle("Change in hemoglobin after starting warfarin") +
+    xlab("Day") +
+    ylab("Hemoglobin (g/dL)") +
+    scale_x_continuous(breaks = seq(-1, 4, by = 1), limits = c(-1, 4)) +
+    scale_color_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL)) +
+    coord_cartesian(ylim = c(7, 12))
+
+print(g)
+```
 
 
 ```{r}
@@ -472,5 +515,12 @@ t.test(x = df$change.inr, g = as.factor(df$group))
 
 ```{r}
 summary(df)
+```
+
+### Bleeding and/or Hemoglobin Drop
+
+```{r}
+
+    
 ```
 
