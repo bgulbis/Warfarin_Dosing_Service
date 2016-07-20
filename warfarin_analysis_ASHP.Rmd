@@ -7,21 +7,15 @@ output:
     fig_caption: yes
     fig_height: 3.75
     fig_width: 5
-  html_notebook:
-    code_folding: hide
-    fig_caption: yes
-    toc: yes
-    toc_float: yes
-  word_document: 
-    fig_caption: yes
-    toc: yes
+    keep_tex: yes
+header-includes: \usepackage{float}
 ---
 
 ## Service Utilization
 
 ### Annual Warfarin Utilization
-```{r global_options, echo=FALSE}
-knitr::opts_chunk$set(warning=FALSE, echo=FALSE)
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, echo=FALSE, fig.pos="H")
 ```
 
 ```{r library, message=FALSE}
