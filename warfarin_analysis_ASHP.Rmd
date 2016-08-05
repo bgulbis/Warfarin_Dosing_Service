@@ -1,0 +1,550 @@
+---
+title: "Warfarin Pharmacy Dosing Service Analysis"
+author: "Brian Gulbis, PharmD, BCPS"
+date: "June 2016"
+output:
+  pdf_document: 
+    fig_caption: yes
+    fig_height: 3.75
+    fig_width: 5
+    keep_tex: yes
+header-includes: \usepackage{float}
+---
+
+## Service Utilization
+
+### Annual Warfarin Utilization
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, echo=FALSE, fig.pos="H")
+```
+
+```{r library, message=FALSE}
+library(BGTools)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(lubridate)
+library(tidyr)
+library(stringr)
+library(tableone)
+```
+
+```{r data}
+tmp <- get_rds("tidy")
+tmp <- get_rds("analysis")
+pts.include <- inner_join(pts.include, data.new, by = "pie.id")
+```
+
+```{r graph_utilization, fig.cap="Number of Patients Receiving Warfarin at MH-TMC, 2013-2015"}
+graph <- analyze.patients.all %>%
+    filter(year.cal >= 2013) %>%
+    ggplot(aes(x = year.cal)) +
+    geom_bar(fill = "#1F78B4") +
+    # ggtitle("Number of Patients Receiving Warfarin at MH-TMC, 2013-2015") +
+    xlab("Year") +
+    ylab("Number of Patients") +
+    scale_y_continuous(limits = c(0, 3000))
+
+print(graph)
+```
+
+### Utilization of Pharmacy Dosing Service
+```{r dose_service_use, fig.cap="Daily Warfarin Orders Managed by Pharmacy and Traditional"}
+d <- analyze.utilization %>%
+    spread(order, n) %>%
+    mutate(warfarin = ifelse(is.na(consult), warfarin, warfarin - consult)) %>%
+    gather(order, n, -action.date) %>%
+    arrange(action.date)
+
+ggplot(d, aes(x = action.date, y = n, color = order)) +
+    geom_line(size = 0.2, alpha = 0.7) +
+    geom_smooth() +
+    # ggtitle("Daily Warfarin Orders Managed by Pharmacy and Traditional") +
+    xlab("Date") +
+    ylab("Number of Daily Orders") +
+    scale_color_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL)) +
+    xlim(c(mdy_hm("1/1/2013 00:00"), mdy_hm("12/31/2015 23:59")))
+```
+
+```{r dose_service_use2, fig.cap="Percent of Daily Warfarin Orders Managed by Pharmacy Dosing Service"}
+group_by(analyze.utilization, action.date) %>%
+    spread(order, n) %>%
+    mutate(perc.consults = consult / warfarin) %>%
+    ggplot(aes(x = action.date, y = perc.consults)) +
+    geom_line(size = 0.2, alpha = 0.7) +
+    geom_smooth() +
+    # ggtitle("Percent of Daily Warfarin Orders Managed by Pharmacy Dosing Service") +
+    xlab("Date") +
+    ylab("Orders (%)") +
+    xlim(c(mdy_hm("1/1/2013 00:00"), mdy_hm("12/31/2015 23:59")))
+```
+
+```{r ds_med_service_curr, fig.cap="Warfarin Dosing Service Utilization Among\nTop 10 Medical Services Ordering Warfarin"}
+tmp <- analyze.services.all %>%
+    mutate(service = ordered(service, levels = names(sort(table(service), decreasing = TRUE)))) %>%
+    group_by(service, consult, historical) %>%
+    summarize(count = n()) %>%
+    arrange(desc(count)) %>%
+    filter(service <="Orthopedic Surgery Service") %>%
+    group_by(service, historical) %>%
+    spread(consult, count) %>%
+    mutate(`FALSE` = `FALSE` - `TRUE`)
+
+tmp$`FALSE`[tmp$`FALSE` < 0] <- 0
+
+tmp <- gather(tmp, consult, count, -service, -historical)
+
+d <- filter(tmp, historical == FALSE) %>%
+    mutate(group = ifelse(consult == TRUE, "pharmacy", "traditional"))
+
+ggplot(data = d, aes(x = service, y = count, fill = group)) +
+    geom_bar(stat = "identity") +
+    # facet_grid(historical ~ .) +
+    # ggtitle("Warfarin Dosing Service Utilization Among\nTop 10 Medical Services Ordering Warfarin") +
+    xlab("Medical Service") +
+    ylab("Number of Patients") +
+    scale_fill_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Comparison
+
+* Group 1 - Pharmacy Dosing Service
+    - Consult placed within 48 hours of warfarin initiation
+    - At least 60% of warfarin doses placed by pharmacist
+* Group 2 - Traditional Dosing
+
+#### Inclusion
+
+* January 1, 2015 to December 31, 2015
+* Age 18 years or greater
+* Received at least 3 doses of warfarin
+* Baseline INR < 1.5
+
+#### Exclusion
+
+* Concurrent DTI or TSOAC
+* Liver dysfunction
+    - AST and ALT > 5x ULN (concurrently)
+    - ALT > 10x ULN
+    - T.Bili > 3x ULN
+* Missing goals of therapy data
+* Readmission encounters
+
+### Results
+   
+```{r demograph_curr}
+
+total <- pts.include %>%
+    group_by(group, year) %>%
+    summarize(total = n())
+
+demograph <- pts.include %>%
+    inner_join(data.demographics, by = "pie.id") %>%
+    inner_join(data.measures, by = "pie.id") %>%
+    mutate(sex = factor(sex, levels = c("Female", "Male")),
+           race = str_replace_all(race, "Oriental", "Asian"),
+           race = factor(race, exclude = c("", "Unknown")))
+
+names(demograph) <- str_to_title(names(demograph))
+names(demograph)[9] <- "Length of Stay"
+names(demograph)[15] <- "BMI"
+
+vars <- c("Age", "Sex", "BMI", "Race", "Length of Stay", "Therapy")
+fvars <- c("Sex", "Race", "Therapy")
+d <- filter(demograph, Year == "current")
+tbl <- CreateTableOne(vars, "Group", d, fvars)
+ptbl <- print(tbl, nonnormal = c("Age", "BMI", "Length of Stay"), printToggle = FALSE, cramVars = "Therapy")
+rownames(ptbl)[6:10] <- str_c("-", rownames(ptbl)[6:10])
+knitr::kable(ptbl[, 1:3], caption = "Demographics")
+```
+
+```{r indications, fig.cap="Indications for warfarin use"}
+counts <- pts.include %>%
+    inner_join(data.warfarin.indications, by = "pie.id") %>%
+    gather(indication, value, -pie.id, -group, -year, -therapy) %>%
+    filter(value == TRUE,
+           year == "current") %>%
+    group_by(group, year, indication) %>%
+    summarize(n = n()) %>%
+    left_join(total, by = c("group", "year")) %>%
+    mutate(perc = n / total)
+
+ggplot(data = counts, aes(x = indication, fill = group)) +
+    geom_bar(aes(y = perc), stat = "identity", position = "dodge") +
+    # facet_grid(year ~ .) +
+    # ggtitle("Indications for warfarin use") +
+    xlab("Indication") +
+    ylab("Patients") +
+    scale_y_continuous(labels = percent) +
+    scale_fill_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r disposition, fig.cap="Disposition on discharge"}
+counts <- pts.include %>%
+    inner_join(data.demographics, by = "pie.id") %>%
+    mutate(disposition = str_replace_all(disposition, regex(".*expired.*|.*hospice.*|.*deceased.*", ignore_case = TRUE), "Deceased/Hospice"),
+           disposition = str_replace_all(disposition, regex(".*home.*|.*against.*", ignore_case = TRUE), "Home"),
+           disposition = str_replace_all(disposition, regex(".*dc.*|.*transfer.*|.*care.*|.*skill.*", ignore_case = TRUE), "Transferred"),
+           disposition = factor(disposition)) %>%
+    group_by(group, year, disposition) %>%
+    filter(year == "current") %>%
+    summarize(n = n()) %>%
+    left_join(total, by = c("group", "year")) %>%
+    mutate(perc = n / total)
+
+ggplot(data = counts, aes(x = disposition, fill = group)) +
+    geom_bar(aes(y = perc), stat = "identity", position = "dodge") +
+    # ggtitle("Disposition on discharge") +
+    xlab("Disposition") +
+    ylab("Patients") +
+    scale_y_continuous(labels = percent) +
+    scale_fill_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r dosing_days, fig.cap="Inpatient Dosing Days"}
+d <- pts.include %>%
+    inner_join(data.labs.inrs, by = "pie.id") %>%
+    calc_lab_runtime(units = "days") %>%
+    filter(year == "current")
+
+df <- d %>%
+    group_by(pie.id, group) %>%
+    summarize(num.days = first(warf.days))
+
+g <- ggplot(df, aes(x = group, y = num.days)) +
+    geom_boxplot() +
+    # ggtitle("Inpatient Dosing Days") +
+    xlab("Group") +
+    ylab("Days")
+
+p <- kruskal.test(x = df$num.days, g = as.factor(df$group))
+lab <- str_c("p-value = ", round(p$p.value, 3))
+
+print(g + annotate("text", x = 1.5, y = 12.5, label = lab) + coord_cartesian(ylim = c(0, 20)))
+```
+
+### Efficacy Endpoints  
+
+```{r inr, fig.cap="INR response after starting warfarin"}
+g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
+    geom_point(alpha = 0.3, size = 0.5) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "dark blue") +
+    geom_smooth(aes(color = group)) +
+    # ggtitle("INR response after starting warfarin") +
+    xlab("Day") +
+    ylab("INR") +
+    scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
+    scale_color_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL)) +
+    coord_cartesian(xlim = c(-2, 10), ylim = c(1, 3))
+
+print(g)
+```
+
+```{r inr2, fig.cap="Change in INR"}
+df <- d %>%
+    group_by(pie.id, group, year) %>%
+    summarize(first.inr = first(lab.result),
+              last.inr = last(lab.result)) %>%
+    mutate(change.inr = last.inr - first.inr)
+
+p <- kruskal.test(x = df$change.inr, g = as.factor(df$group))
+lab <- str_c("p-value = ", round(p$p.value, 3))
+
+g <- ggplot(df, aes(x = group, y = change.inr)) +
+    geom_boxplot() +
+    annotate("text", x = 1.5, y = 3, label = lab) +
+    # ggtitle("Change in INR") +
+    xlab("Group") +
+    ylab("INR Difference")
+
+print(g)
+```
+
+```{r ttr, fig.cap="Percent of time INR is within therapeutic range"}
+d <- pts.include %>%
+    inner_join(data.inr.inrange, by = "pie.id") %>%
+    filter(year == "current")
+
+p <- kruskal.test(x = d$perc.time, g = as.factor(d$group))
+
+g <- ggplot(d, aes(x = group, y = perc.time)) +
+    geom_boxplot() +
+    # ggtitle("Percent of time INR is within therapeutic range") +
+    xlab("Group") +
+    ylab("Time in Therapeutic Range") +
+    scale_y_continuous(labels = percent)
+
+print(g)
+```
+
+### Safety Endpoints  
+
+```{r time_above4, fig.cap="Percent of time INR is critical (above 4)"}
+d <- pts.include %>%
+    inner_join(data.inr.supratx, by = "pie.id") %>%
+    filter(year == "current")
+
+p <- kruskal.test(x = d$perc.time, g = as.factor(d$group))
+
+g <- ggplot(d, aes(x = group, y = perc.time)) +
+    geom_boxplot() +
+    # ggtitle("Percent of time INR is critical (above 4)") +
+    xlab("Group") +
+    ylab("Time with Critical INR") +
+    scale_y_continuous(labels = percent)
+
+print(g)
+```
+
+```{r hgb, fig.cap="Change in hemoglobin after starting warfarin"}
+d <- pts.include %>%
+    inner_join(data.labs.hgb, by = "pie.id") %>%
+    calc_lab_runtime(units = "days") %>%
+    filter(year == "current")
+
+g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
+    geom_point(alpha = 0.3, size = 0.5) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "dark blue") +
+    geom_smooth(aes(color = group)) +
+    # ggtitle("Change in hemoglobin after starting warfarin") +
+    xlab("Day") +
+    ylab("Hemoglobin (g/dL)") +
+    scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
+    scale_color_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL)) +
+    coord_cartesian(xlim = c(-2, 10), ylim = c(7, 12))
+
+print(g)
+```
+
+```{r hgb2, fig.cap="Change in Hemoglobin"}
+df <- d %>%
+    group_by(pie.id, group, year) %>%
+    summarize(first.inr = first(lab.result),
+              last.inr = last(lab.result)) %>%
+    mutate(change.inr = last.inr - first.inr)
+
+p <- kruskal.test(x = df$change.inr, g = as.factor(df$group))
+lab <- str_c("p-value = ", round(p$p.value, 3))
+
+g <- ggplot(df, aes(x = group, y = change.inr)) +
+    geom_boxplot() +
+    annotate("text", x = 1.5, y = 2.5, label = lab) +
+    # ggtitle("Change in Hemoglobin") +
+    xlab("Group") +
+    ylab("Hemoglobin Difference (g/dL)")
+
+print(g)
+```
+
+## Historical Comparison
+
+* Pharmacy Dosing Service 2015 vs. 2013-2014
+* Same inclusion and exclusion criteria
+
+```{r demograph_hist}
+d <- filter(demograph, Group == "pharmacy")
+tbl <- CreateTableOne(vars, "Year", d, fvars)
+ptbl <- print(tbl, nonnormal = c("Age", "Length of Stay"), printToggle = FALSE, cramVars = "Therapy")
+rownames(ptbl)[6:11] <- str_c("-", rownames(ptbl)[6:11])
+knitr::kable(ptbl[, 1:3], caption = "Demographics")
+```
+
+```{r ds_med_service, fig.cap="Warfarin Dosing Service Utilization Among\nTop 10 Medical Services Ordering Warfarin"}
+d <- filter(tmp, consult == TRUE) %>%
+    mutate(year = ifelse(historical == TRUE, "historical", "current"),
+           count = ifelse(historical == TRUE, count / 2, count))
+
+ggplot(d, aes(x = service, y = count, fill = year)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    # facet_grid(historical ~ .) +
+    # ggtitle("Warfarin Dosing Service Utilization Among\nTop 10 Medical Services Ordering Warfarin") +
+    xlab("Medical Service") +
+    ylab("Number of Patients (Annualized)") +
+    scale_fill_brewer(palette = "Set1", labels = c("Current", "Historical"), guide = guide_legend(title = NULL)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r indications_hist, fig.cap="Indications for warfarin use"}
+counts <- pts.include %>%
+    inner_join(data.warfarin.indications, by = "pie.id") %>%
+    gather(indication, value, -pie.id, -group, -year) %>%
+    filter(value == TRUE, group == "pharmacy") %>%
+    group_by(group, year, indication) %>%
+    summarize(n = n()) %>%
+    left_join(total, by = c("group", "year")) %>%
+    mutate(perc = n / total)
+
+ggplot(data = counts, aes(x = indication, fill = year)) +
+    geom_bar(aes(y = perc), stat = "identity", position = "dodge") +
+    # facet_grid(year ~ .) +
+    # ggtitle("Indications for warfarin use") +
+    xlab("Indication") +
+    ylab("Patients") +
+    scale_y_continuous(labels = percent) +
+    scale_fill_brewer(palette = "Set1", labels = c("Current", "Historical"), guide = guide_legend(title = NULL)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r disposition_hist, fig.cap="Disposition on discharge"}
+counts <- pts.include %>%
+    inner_join(data.demographics, by = "pie.id") %>%
+    filter(group == "pharmacy") %>%
+    mutate(disposition = str_replace_all(disposition, regex(".*expired.*|.*hospice.*|.*deceased.*", ignore_case = TRUE), "Deceased/Hospice"),
+           disposition = str_replace_all(disposition, regex(".*home.*|.*against.*", ignore_case = TRUE), "Home"),
+           disposition = str_replace_all(disposition, regex(".*dc.*|.*transfer.*|.*care.*|.*skill.*", ignore_case = TRUE), "Transferred"),
+           disposition = factor(disposition)) %>%
+    group_by(group, year, disposition) %>%
+    summarize(n = n()) %>%
+    left_join(total, by = c("group", "year")) %>%
+    mutate(perc = n / total)
+
+ggplot(data = counts, aes(x = disposition, fill = year)) +
+    geom_bar(aes(y = perc), stat = "identity", position = "dodge") +
+    # facet_grid(year ~ .) +
+    # ggtitle("Disposition on discharge") +
+    xlab("Disposition") +
+    ylab("Patients") +
+    scale_y_continuous(labels = percent) +
+    scale_fill_brewer(palette = "Set1", labels = c("Current", "Historical"), guide = guide_legend(title = NULL)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r dosing_days_hist, fig.cap="Inpatient Dosing Days"}
+d <- pts.include %>%
+    inner_join(data.labs.inrs, by = "pie.id") %>%
+    calc_lab_runtime(units = "days") %>%
+    filter(group == "pharmacy")
+
+df <- d %>%
+    group_by(pie.id, year) %>%
+    summarize(num.days = first(warf.days))
+
+p <- kruskal.test(x = df$num.days, g = as.factor(df$year))
+
+g <- ggplot(df, aes(x = year, y = num.days)) +
+    geom_boxplot() +
+    # ggtitle("Inpatient Dosing Days") +
+    xlab("Group") +
+    ylab("Days")
+
+print(g)
+```
+
+### Efficacy Endpoints  
+
+```{r inr_hist, fig.cap="Change in INR after starting warfarin"}
+d <- pts.include %>%
+    inner_join(data.labs.inrs, by = "pie.id") %>%
+    filter(group == "pharmacy") %>%
+    calc_lab_runtime(units = "days")
+
+g <- ggplot(d, aes(x = run.time, y = lab.result, group = year)) +
+    # facet_grid(year ~ .) +
+    geom_point(alpha = 0.3, size = 0.5) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "dark blue") +
+    geom_smooth(aes(color = year)) +
+    # ggtitle("Change in INR after starting warfarin") +
+    xlab("Day") +
+    ylab("INR") +
+    scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
+    scale_color_brewer(palette = "Set1", labels = c("Current", "Historical"), guide = guide_legend(title = NULL)) +
+    coord_cartesian(xlim = c(-2, 10), ylim = c(1, 3.5))
+
+print(g)
+```
+
+```{r inr2_hist, fig.cap="Change in INR"}
+df <- d %>%
+    group_by(pie.id, year) %>%
+    summarize(first.inr = first(lab.result),
+              last.inr = last(lab.result)) %>%
+    mutate(change.inr = last.inr - first.inr)
+
+p <- kruskal.test(x = df$change.inr, g = as.factor(df$year))
+lab <- str_c("p-value = ", round(p$p.value, 3))
+
+g <- ggplot(df, aes(x = year, y = change.inr)) +
+    geom_boxplot() +
+    # annotate("text", x = 1.5, y = 3, label = lab) +
+    # ggtitle("Change in INR") +
+    xlab("Group") +
+    ylab("INR Difference")
+
+print(g)
+```
+
+```{r ttr_hist, fig.cap="Percent of time INR is within therapeutic range"}
+d <- pts.include %>%
+    inner_join(data.inr.inrange, by = "pie.id") %>%
+    filter(group == "pharmacy")
+
+p <- kruskal.test(x = d$perc.time, g = as.factor(d$year))
+lab <- str_c("p-value = ", round(p$p.value, 3))
+
+g <- ggplot(d, aes(x = year, y = perc.time)) +
+    geom_boxplot() +
+    # ggtitle("Percent of time INR is within therapeutic range") +
+    xlab("Group") +
+    ylab("Time in Therapeutic Range") +
+    scale_y_continuous(labels = percent)
+
+print(g)
+```
+
+### Safety Endpoints  
+
+```{r critical_hist, fig.cap="Percent of time INR is critical (above 4)"}
+pts.include %>%
+    inner_join(data.inr.supratx, by = "pie.id") %>%
+    filter(group == "pharmacy") %>%
+    ggplot(aes(x = year, y = perc.time)) +
+    geom_boxplot() +
+    # facet_grid(year ~ .) +
+    # ggtitle("Percent of time INR is critical (above 4)") +
+    xlab("Group") +
+    ylab("Time with Critical INR") +
+    scale_y_continuous(labels = percent)
+```
+
+```{r hgb_hist, fig.cap="Change in hemoglobin after starting warfarin"}
+d <- pts.include %>%
+    inner_join(data.labs.hgb, by = "pie.id") %>%
+    calc_lab_runtime(units = "days") %>%
+    filter(group == "pharmacy")
+
+g <- ggplot(d, aes(x = run.time, y = lab.result, group = year)) +
+    geom_point(alpha = 0.3, size = 0.5) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "dark blue") +
+    geom_smooth(aes(color = year)) +
+    # ggtitle("Change in hemoglobin after starting warfarin") +
+    xlab("Day") +
+    ylab("Hemoglobin (g/dL)") +
+    scale_x_continuous(breaks = seq(-2, 10, by = 2)) +
+    scale_color_brewer(palette = "Set1", labels = c("Current", "Historical"), guide = guide_legend(title = NULL)) +
+    coord_cartesian(xlim = c(-2, 10), ylim = c(7, 12))
+
+print(g)
+```
+
+```{r hgb2_hist, fig.cap="Change in Hemoglobin"}
+df <- d %>%
+    group_by(pie.id, year) %>%
+    summarize(first.inr = first(lab.result),
+              last.inr = last(lab.result)) %>%
+    mutate(change.inr = last.inr - first.inr)
+
+p <- kruskal.test(x = df$change.inr, g = as.factor(df$year))
+lab <- str_c("p-value = ", round(p$p.value, 3))
+
+g <- ggplot(df, aes(x = year, y = change.inr)) +
+    geom_boxplot() +
+    annotate("text", x = 1.5, y = 2.5, label = lab) +
+    # ggtitle("Change in Hemoglobin") +
+    xlab("Group") +
+    ylab("Hemoglobin Difference (g/dL)")
+
+print(g)
+```
