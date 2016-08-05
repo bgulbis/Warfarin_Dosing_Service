@@ -1,7 +1,7 @@
 Warfarin Pharmacy Dosing Service Analysis
 ========================================================
-author: Brian Gulbis
-date: June 2016
+author: Brian Gulbis, PharmD, BCPS
+date: August 2016
 autosize: true
 
 Annual Warfarin Utilization
@@ -111,6 +111,19 @@ Change in Hemoglobin
 ========================================================
 ![plot of chunk hgb2](warfarin_analysis-figure/hgb2-1.png)
 
+Hemoglobin Drop and Bleeding
+========================================================
+
+|                 |pharmacy  |traditional |p     |test |
+|:----------------|:---------|:-----------|:-----|:----|
+|n                |402       |287         |      |     |
+|drop = TRUE (%)  |24 ( 6.0) |27 (9.4)    |0.121 |     |
+|major = TRUE (%) |47 (11.7) |12 (4.2)    |0.001 |     |
+|minor = TRUE (%) |39 ( 9.7) |19 (6.6)    |0.195 |     |
+
+* drop is defined as a decrease in hemoglobin of at least 2 g/dL within a 48-hour period
+* major and minor determined by having a bleeding-related ICD-9/10-CM code
+
 Historical Comparison
 ========================================================
 
@@ -174,3 +187,13 @@ Hemoglobin Response
 Change in Hemoglobin
 ========================================================
 ![plot of chunk hgb2_hist](warfarin_analysis-figure/hgb2_hist-1.png)
+
+Hemoglobin Drop and Bleeding
+========================================================
+
+|                 |current   |historical |p     |test |
+|:----------------|:---------|:----------|:-----|:----|
+|n                |402       |866        |      |     |
+|drop = TRUE (%)  |24 ( 6.0) |52 (6.0)   |1.000 |     |
+|major = TRUE (%) |47 (11.7) |70 (8.1)   |0.050 |     |
+|minor = TRUE (%) |39 ( 9.7) |53 (6.1)   |0.030 |     |
