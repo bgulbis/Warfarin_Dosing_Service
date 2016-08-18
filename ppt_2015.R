@@ -149,11 +149,18 @@ fvars <- c("Sex", "Race", "Therapy")
 d <- filter(demograph, Year == "current")
 tbl <- CreateTableOne(vars, "Group", d, fvars)
 ptbl <- print(tbl, nonnormal = c("Age", "BMI", "Length of Stay"), printToggle = FALSE, cramVars = "Therapy")
-rownames(ptbl)[6:10] <- str_c("-", rownames(ptbl)[6:10])
+# rownames(ptbl)[6:10] <- str_c("-", rownames(ptbl)[6:10])
+
 ft <- FlexTable(ptbl[, 1:3],
                 add.rownames = TRUE,
-                body.par.props = parProperties(padding = 4),
+                body.par.props = parProperties(padding = 8),
+                body.text.props = textProperties(font.size = 16, font.family = "Calibri"),
+                header.text.props = textProperties(font.size = 20, font.family = "Calibri", font.weight = "bold"),
                 header.par.props = parProperties(padding = 4))
+
+ft <- setFlexTableWidths(ft, widths = c(3, 2.25, 2.25, 1.5))
+ft[, to = "header"] <- parCenter()
+ft[, 2:4] <- parCenter()
 
 doc <- addSlide(doc, slide.layout = "Alternate Title and Content")
 doc <- addTitle(doc, "Demographics")
@@ -205,7 +212,8 @@ g <- ggplot(df, aes(x = group, y = num.days)) +
     xlab("Group") +
     ylab("Days") +
     annotate("text", x = 1.5, y = 12.5, label = lab, size = 8) +
-    coord_cartesian(ylim = c(0, 20))
+    # coord_cartesian(ylim = c(0, 20))
+    ylim(c(0, 20))
 
 doc <- addSlide(doc, slide.layout = "Alternate Title and Content")
 doc <- addTitle(doc, "Inpatient Dosing Days")
@@ -220,9 +228,10 @@ g <- ggplot(d, aes(x = run.time, y = lab.result, group = group)) +
     ggtitle("INR response after starting warfarin") +
     xlab("Day") +
     ylab("INR") +
-    scale_x_continuous(breaks = seq(0, 10, by = 2)) +
-    scale_color_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL)) +
-    coord_cartesian(xlim = c(0, 10), ylim = c(1, 3))
+    scale_x_continuous(breaks = seq(0, 10, by = 2), limits = c(0, 10)) +
+    ylim(c(1, 3)) +
+    scale_color_brewer(palette = "Set1", labels = c("Pharmacy", "Traditional"), guide = guide_legend(title = NULL))
+    # coord_cartesian(xlim = c(0, 10), ylim = c(1, 3))
 
 doc <- addSlide(doc, slide.layout = "Alternate Title and Content")
 doc <- addTitle(doc, "INR Response")
@@ -332,12 +341,18 @@ fvars <- c("Sex", "Race", "Therapy")
 
 tbl <- CreateTableOne(vars, "Year", d, fvars)
 ptbl <- print(tbl, nonnormal = c("Age", "Length of Stay"), printToggle = FALSE, cramVars = "Therapy")
-rownames(ptbl)[6:11] <- str_c("-", rownames(ptbl)[6:11])
+# rownames(ptbl)[6:11] <- str_c("-", rownames(ptbl)[6:11])
 
 ft <- FlexTable(ptbl[, 1:3],
                 add.rownames = TRUE,
-                body.par.props = parProperties(padding = 4),
+                body.par.props = parProperties(padding = 8),
+                body.text.props = textProperties(font.size = 16, font.family = "Calibri"),
+                header.text.props = textProperties(font.size = 20, font.family = "Calibri", font.weight = "bold"),
                 header.par.props = parProperties(padding = 4))
+
+ft <- setFlexTableWidths(ft, widths = c(3, 2.25, 2.25, 1.5))
+ft[, to = "header"] <- parCenter()
+ft[, 2:4] <- parCenter()
 
 doc <- addSlide(doc, slide.layout = "Alternate Title and Content")
 doc <- addTitle(doc, "Historical Demographics")
@@ -405,7 +420,8 @@ g <- ggplot(df, aes(x = year, y = num.days)) +
     ggtitle("Inpatient Dosing Days") +
     xlab("Group") +
     ylab("Days") +
-    coord_cartesian(ylim = c(0, 20))
+    # coord_cartesian(ylim = c(0, 20))
+    ylim(c(0, 20))
 
 doc <- addSlide(doc, slide.layout = "Alternate Title and Content")
 doc <- addTitle(doc, "Inpatient Dosing Days")
@@ -426,9 +442,9 @@ g <- ggplot(d, aes(x = run.time, y = lab.result, group = year)) +
     ggtitle("Change in INR after starting warfarin") +
     xlab("Day") +
     ylab("INR") +
-    scale_x_continuous(breaks = seq(0, 10, by = 2)) +
-    scale_color_brewer(palette = "Set1", labels = c("Current", "Historical"), guide = guide_legend(title = NULL)) +
-    coord_cartesian(xlim = c(0, 10), ylim = c(1, 3.5))
+    scale_x_continuous(breaks = seq(0, 10, by = 2), limits = c(0, 10)) +
+    ylim(c(1, 3)) +
+    scale_color_brewer(palette = "Set1", labels = c("Current", "Historical"), guide = guide_legend(title = NULL))
 
 doc <- addSlide(doc, slide.layout = "Alternate Title and Content")
 doc <- addTitle(doc, "INR Response")
@@ -528,8 +544,9 @@ doc <- addParagraph(doc, "Will allow for more real-time monitoring of utilizatio
 doc <- addParagraph(doc, "Demo available at:",
                     par.properties = ul1,
                     append = TRUE)
-doc <- addParagraph(doc, "https://bgulbis.github.io/Warfarin_Dashboard/report/dashboard.html",
-                    par.properties = ul2,
-                    append = TRUE)
+
+link <- pot("https://bgulbis.github.io/Warfarin_Dashboard/report/dashboard.html",
+            hyperlink = "https://bgulbis.github.io/Warfarin_Dashboard/report/dashboard.html")
+doc <- addParagraph(doc, link, par.properties = ul2, append = TRUE)
 
 writeDoc(doc, file = "warfarin_analysis_2015.pptx")
